@@ -1,0 +1,20 @@
+## IDF Component Manager Manifest File
+version: "0.1.0"
+description: "A simple ESP-IDF driver for the DS3231 RTC"
+license: "MIT"
+url: 
+repository: 
+documentation: 
+issues: 
+
+tags:
+  - time
+  - RTC
+  - DS3231
+  - DS3231SN
+  - I2C
+
+dependencies:
+  ## Required IDF version
+  idf:
+    version: ">=5.3"
