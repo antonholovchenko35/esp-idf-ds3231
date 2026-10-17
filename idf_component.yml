@@ -2,10 +2,10 @@
 version: "0.1.0"
 description: "A simple ESP-IDF driver for the DS3231 RTC"
 license: "MIT"
-url: 
-repository: 
-documentation: 
-issues: 
+url: "https://github.com/antonholovchenko35/esp-idf-ds3231"
+repository: "https://github.com/antonholovchenko35/esp-idf-ds3231.git"
+documentation: "https://github.com/antonholovchenko35/esp-idf-ds3231#readme"
+issues: "https://github.com/antonholovchenko35/esp-idf-ds3231/issues"
 
 tags:
   - time
