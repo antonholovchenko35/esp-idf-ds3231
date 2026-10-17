@@ -2,10 +2,9 @@
 #include <stdint.h>
 #include <time.h>
 
-#include "includes/ds3231.h"
+#include "include/ds3231.h"
 #include "driver/i2c_master.h"
 #include "esp_check.h"
-#include "driver/gpio.h"
 
 #define DS3231_ADDR_SEC     0x00
 #define DS3231_ADDR_MIN     0x01
@@ -28,32 +27,19 @@ typedef struct {
 } ds3231_dev_t;
 
 static uint8_t s_convert_to_bcd(uint8_t val){
-    uint8_t dec = val / 10;
-    uint8_t units = val % 10;
-
-    uint8_t bcd_val = (dec << 4) | units;
-    return bcd_val;
+    return ((val / 10) << 4) + (val % 10);
 }
 
-static void s_convert_from_bcd(uint8_t *data){
-    uint8_t dec;
-    uint8_t units;
+static void s_convert_from_bcd(uint8_t *data, size_t len){
     uint8_t val;
 
-    *(data + 2) = (*(data + 2) & ~(1 << 6));
-    *(data + 5) = (*(data + 5) & 0x1F);
-
-    for (size_t i = 0; i < 7; ++i){
-        dec = (*(data + i) >> 4) * 10;
-        units = (*(data + i) & 0x0F);
-
-        val = dec + units;
-
-        *(data + i) = val;
+    for (size_t i = 0; i < len; ++i){
+        val = data[i];
+        data[i] = (val >> 4) * 10 + (val & 0x0F);
     }
 }
 
-static esp_err_t precond_checks(ds3231_dev_t *rtc){
+static esp_err_t s_precond_checks(ds3231_dev_t *rtc){
     if (rtc == NULL)
         return ESP_ERR_INVALID_ARG;
 
@@ -105,7 +91,7 @@ esp_err_t ds3231_get_time_valid(ds3231_handle_t ds3231_handle, bool *time_valid)
 
     ds3231_dev_t *rtc = (ds3231_dev_t *)ds3231_handle;
 
-    ESP_GOTO_ON_ERROR(precond_checks(rtc), err, TAG, "Invalid or uninitialized device");
+    ESP_GOTO_ON_ERROR(s_precond_checks(rtc), err, TAG, "Invalid or uninitialized device");
 
     uint8_t status_buf_write = DS3231_ADDR_STAT;
     uint8_t status_buf_read;
@@ -129,7 +115,7 @@ esp_err_t ds3231_osc_battery_get_status(ds3231_handle_t ds3231_handle, bool *ena
 
     ds3231_dev_t *rtc = (ds3231_dev_t *)ds3231_handle;
 
-    ESP_GOTO_ON_ERROR(precond_checks(rtc), err, TAG, "Invalid or uninitialized device");
+    ESP_GOTO_ON_ERROR(s_precond_checks(rtc), err, TAG, "Invalid or uninitialized device");
 
     uint8_t control_reg_addr = DS3231_ADDR_CNTRL;
     uint8_t control_reg_buf;
@@ -153,7 +139,7 @@ esp_err_t ds3231_osc_battery_set_status(ds3231_handle_t ds3231_handle, bool enab
 
     ds3231_dev_t *rtc = (ds3231_dev_t *)ds3231_handle;
 
-    ESP_GOTO_ON_ERROR(precond_checks(rtc), err, TAG, "Invalid or uninitialized device");
+    ESP_GOTO_ON_ERROR(s_precond_checks(rtc), err, TAG, "Invalid or uninitialized device");
     
     uint8_t control_reg_buf[2];
     control_reg_buf[0] = DS3231_ADDR_CNTRL;
@@ -175,18 +161,25 @@ esp_err_t ds3231_osc_battery_set_status(ds3231_handle_t ds3231_handle, bool enab
         return ret;
 }
 
-esp_err_t ds3231_set_time(ds3231_handle_t ds3231_handle, struct tm timeinfo){
+esp_err_t ds3231_set_time(ds3231_handle_t ds3231_handle, struct tm timeinfo, bool *is_pm){
     esp_err_t ret = ESP_OK;
     ds3231_dev_t *rtc = (ds3231_dev_t *)ds3231_handle;
 
-    ESP_GOTO_ON_ERROR(precond_checks(rtc), err, TAG, "Invalid or uninitialized device");
+    ESP_GOTO_ON_ERROR(s_precond_checks(rtc), err, TAG, "Invalid or uninitialized device");
 
     uint8_t data[8];
 
     data[0] = DS3231_ADDR_SEC;
     data[1] = s_convert_to_bcd(timeinfo.tm_sec);
     data[2] = s_convert_to_bcd(timeinfo.tm_min);
-    data[3] = s_convert_to_bcd(timeinfo.tm_hour);
+
+    if (is_pm == NULL)
+        data[3] = s_convert_to_bcd(timeinfo.tm_hour);
+    else if (*is_pm == true)
+        data[3] = s_convert_to_bcd(timeinfo.tm_hour) | (1 << 5) | (1 << 6);
+    else
+        data[3] = s_convert_to_bcd(timeinfo.tm_hour) | (1 << 6);
+
     data[4] = s_convert_to_bcd(timeinfo.tm_wday + 1);
     data[5] = s_convert_to_bcd(timeinfo.tm_mday);
     data[6] = s_convert_to_bcd(timeinfo.tm_mon + 1);
@@ -213,11 +206,11 @@ esp_err_t ds3231_set_time(ds3231_handle_t ds3231_handle, struct tm timeinfo){
         return ret;
 }
 
-esp_err_t ds3231_get_time(ds3231_handle_t ds3231_handle, struct tm *timeinfo){
+esp_err_t ds3231_get_time(ds3231_handle_t ds3231_handle, struct tm *timeinfo, bool *is_pm){
     esp_err_t ret = ESP_OK;
     ds3231_dev_t *rtc = (ds3231_dev_t *)ds3231_handle;
 
-    ESP_GOTO_ON_ERROR(precond_checks(rtc), err, TAG, "Invalid or uninitialized device");
+    ESP_GOTO_ON_ERROR(s_precond_checks(rtc), err, TAG, "Invalid or uninitialized device");
 
     uint8_t data_buf_write = DS3231_ADDR_SEC;
     uint8_t data_buf_read[7];
@@ -225,7 +218,23 @@ esp_err_t ds3231_get_time(ds3231_handle_t ds3231_handle, struct tm *timeinfo){
     ESP_GOTO_ON_ERROR(i2c_master_transmit_receive(rtc->i2c_handle, &data_buf_write, 1, data_buf_read, 7, DS3231_TIMEOUT_MS), err,
                       TAG, "Failed to read time registers");
 
-    s_convert_from_bcd(data_buf_read);
+
+    // check the format of time
+    if (data_buf_read[2] & (1 << 6)){
+        ESP_GOTO_ON_FALSE(is_pm != NULL, ESP_ERR_INVALID_ARG, err, TAG, "is_pm must be not NULL in 12-hour mode");
+
+        data_buf_read[2] &= ~(1 << 6);
+        
+        if (data_buf_read[2] & (1 << 5))
+            *is_pm = true;
+        else
+            *is_pm = false;
+
+        data_buf_read[2] &= ~(1 << 5);
+    }
+
+    data_buf_read[5] &= ~(1 << 7); // turn off century bit
+    s_convert_from_bcd(data_buf_read, sizeof(data_buf_read));
 
     timeinfo->tm_sec = data_buf_read[0];
     timeinfo->tm_min = data_buf_read[1];
