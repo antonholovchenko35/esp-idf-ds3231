@@ -2,7 +2,7 @@
 #include <stdint.h>
 #include <time.h>
 
-#include "include/ds3231.h"
+#include "ds3231.h"
 #include "driver/i2c_master.h"
 #include "esp_check.h"
 
@@ -154,6 +154,30 @@ esp_err_t ds3231_osc_battery_set_status(ds3231_handle_t ds3231_handle, bool enab
         
     ESP_GOTO_ON_ERROR(i2c_master_transmit(rtc->i2c_handle, control_reg_buf, 2, DS3231_TIMEOUT_MS), err,
                       TAG, "Failed to write control register");
+
+    return ret;
+
+    err:
+        return ret;
+}
+
+esp_err_t ds3231_get_time_format(ds3231_handle_t ds3231_handle, ds3231_time_format_t *timeformat){
+    esp_err_t ret = ESP_OK;
+
+    ds3231_dev_t *rtc = (ds3231_dev_t *)ds3231_handle;
+
+    ESP_GOTO_ON_ERROR(s_precond_checks(rtc), err, TAG, "Invalid or uninitialized device");
+
+    uint8_t data_buf_write = DS3231_ADDR_HOUR;
+    uint8_t data_buf_read;
+
+    ESP_GOTO_ON_ERROR(i2c_master_transmit_receive(rtc->i2c_handle, &data_buf_write, 1, &data_buf_read, 1, DS3231_TIMEOUT_MS), err,
+                      TAG, "Failed to read hour register");
+
+    if (data_buf_read & (1 << 6))
+        *timeformat = DS3231_TIME_FORMAT_12H;
+    else
+        *timeformat = DS3231_TIME_FORMAT_24H;
 
     return ret;
 
