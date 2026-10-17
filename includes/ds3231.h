@@ -12,11 +12,8 @@
 extern "C"{
 #endif
 
-typedef enum {
-    REG
-} rtc_registers;
-
 typedef void *ds3231_handle_t;
+
 
 esp_err_t ds3231_create(i2c_master_bus_handle_t i2c_bus, ds3231_handle_t *ds3231_handle);
 void ds3231_delete(ds3231_handle_t ds3231_handle);

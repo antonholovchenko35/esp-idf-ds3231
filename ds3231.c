@@ -5,6 +5,7 @@
 #include "includes/ds3231.h"
 #include "driver/i2c_master.h"
 #include "esp_check.h"
+#include "driver/gpio.h"
 
 #define DS3231_ADDR_SEC     0x00
 #define DS3231_ADDR_MIN     0x01
@@ -42,7 +43,6 @@ static void s_convert_from_bcd(uint8_t *data){
     *(data + 2) = (*(data + 2) & ~(1 << 6));
     *(data + 5) = (*(data + 5) & 0x1F);
 
-    // for hours - check later. Add 12/24 hrs format support
     for (size_t i = 0; i < 7; ++i){
         dec = (*(data + i) >> 4) * 10;
         units = (*(data + i) & 0x0F);
@@ -240,3 +240,4 @@ esp_err_t ds3231_get_time(ds3231_handle_t ds3231_handle, struct tm *timeinfo){
     err:
         return ret;
 }
+
