@@ -1,0 +1,4 @@
+dependencies:
+  antonholovchenko35/ds3231:
+    version: "*"
+    override_path: "../../../"
