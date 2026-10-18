@@ -116,6 +116,8 @@ esp_err_t ds3231_osc_battery_get_status(ds3231_handle_t ds3231_handle, bool *ena
     ds3231_dev_t *rtc = (ds3231_dev_t *)ds3231_handle;
 
     ESP_GOTO_ON_ERROR(s_precond_checks(rtc), err, TAG, "Invalid or uninitialized device");
+    ESP_GOTO_ON_FALSE(enabled != NULL, ESP_ERR_INVALID_ARG, err,
+                      TAG, "\"enabled\" must not be NULL");
 
     uint8_t control_reg_addr = DS3231_ADDR_CNTRL;
     uint8_t control_reg_buf;
@@ -167,6 +169,8 @@ esp_err_t ds3231_get_time_format(ds3231_handle_t ds3231_handle, ds3231_time_form
     ds3231_dev_t *rtc = (ds3231_dev_t *)ds3231_handle;
 
     ESP_GOTO_ON_ERROR(s_precond_checks(rtc), err, TAG, "Invalid or uninitialized device");
+    ESP_GOTO_ON_FALSE(timeformat != NULL, ESP_ERR_INVALID_ARG, err,
+                      TAG, "\"timeformat\" must not be NULL");
 
     uint8_t data_buf_write = DS3231_ADDR_HOUR;
     uint8_t data_buf_read;
@@ -190,6 +194,9 @@ esp_err_t ds3231_set_time(ds3231_handle_t ds3231_handle, struct tm timeinfo, boo
     ds3231_dev_t *rtc = (ds3231_dev_t *)ds3231_handle;
 
     ESP_GOTO_ON_ERROR(s_precond_checks(rtc), err, TAG, "Invalid or uninitialized device");
+    ESP_GOTO_ON_FALSE((is_pm == NULL && timeinfo.tm_hour >= 0 && timeinfo.tm_hour <= 23)
+                      || (is_pm != NULL && timeinfo.tm_hour >= 1 && timeinfo.tm_hour <= 12),
+                      ESP_ERR_INVALID_ARG, err, TAG, "tm_hour is out of range for the selected time format");
 
     uint8_t data[8];
 
@@ -235,6 +242,8 @@ esp_err_t ds3231_get_time(ds3231_handle_t ds3231_handle, struct tm *timeinfo, bo
     ds3231_dev_t *rtc = (ds3231_dev_t *)ds3231_handle;
 
     ESP_GOTO_ON_ERROR(s_precond_checks(rtc), err, TAG, "Invalid or uninitialized device");
+    ESP_GOTO_ON_FALSE(timeinfo != NULL, ESP_ERR_INVALID_ARG, err,
+                      TAG, "\"timeinfo\" must not be NULL");
 
     uint8_t data_buf_write = DS3231_ADDR_SEC;
     uint8_t data_buf_read[7];
