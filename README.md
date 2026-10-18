@@ -1,13 +1,14 @@
 # esp-idf-ds3231
 
-A minimalistic ESP-IDF driver for the RTC module DS3231, built on the `i2c_master` API. Support for other features of the DS3231 may be added in the future versions. 
+A minimalistic ESP-IDF driver for the RTC module DS3231, built on the i2c_master API. Future versions may add support for other DS3231 features. All features of this driver are tested on an ESP32-S3 board, including new ones that will be added in future releases.
 
 ## Features
-- Read and set time with `struct tm` from the standard library `time.h`
-- 12-hours and 24-hours format
-- Run and stop of the oscillator when running on battery
-- Only you own I2C bus, so it can be shared with other devices
-- Time and data registers are read and written with a single I2C transaction, so there are no rollover errors between seconds, and hours
+
+- Read and set time with struct tm from the standard library time.h
+- 12-hour and 24-hour formats.
+- Run and stop the oscillator when running on battery.
+- Your application's own I2C bus so that it can be easily shared with other devices.
+- Time and data registers are read and written with a single I2C transaction, so there are no rollover errors between seconds, minutes, and hours.
 
 ## Requirements
 - ESP-IDF v5.3 or newer
