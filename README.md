@@ -6,6 +6,7 @@ A minimalistic ESP-IDF driver for the RTC module DS3231, built on the i2c_master
 
 - Read and set time with struct tm from the standard library time.h
 - 12-hour and 24-hour formats.
+- Read temperature and get/set aging
 - Run and stop the oscillator when running on battery.
 - Your application's own I2C bus so that it can be easily shared with other devices.
 - Time and data registers are read and written with a single I2C transaction, so there are no rollover errors between seconds, minutes, and hours.
