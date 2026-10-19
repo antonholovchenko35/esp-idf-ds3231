@@ -306,3 +306,25 @@ esp_err_t ds3231_get_temperature(ds3231_handle_t ds3231_handle, float *temp){
     err:
         return ret;
 }
+
+esp_err_t ds3231_get_aging(ds3231_handle_t ds3231_handle, int8_t *age){
+    esp_err_t ret = ESP_OK;
+
+    ds3231_dev_t *rtc = (ds3231_dev_t *)ds3231_handle;
+
+    ESP_GOTO_ON_ERROR(s_precond_checks(rtc), err, TAG, "Invalid or uninitialized device");
+    ESP_GOTO_ON_FALSE(age != NULL, ESP_ERR_INVALID_ARG, err, TAG, "\"age\" must not be NULL");
+
+    uint8_t aging_addr = DS3231_ADDR_AGING;
+    uint8_t aging_read;
+
+    ESP_GOTO_ON_ERROR(i2c_master_transmit_receive(rtc->i2c_handle, &aging_addr, 1, &aging_read, 1, DS3231_TIMEOUT_MS), err,
+                      TAG, "Failed to read aging register");
+
+    *age = (int8_t)aging_read;
+
+    return ret;
+
+    err:
+        return ret;
+}
