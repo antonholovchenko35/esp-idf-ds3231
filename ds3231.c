@@ -16,6 +16,8 @@
 
 #define DS3231_ADDR_CNTRL   0x0E
 #define DS3231_ADDR_STAT    0x0F
+#define DS3231_ADDR_AGING   0x10
+#define DS3231_ADDR_TEMP    0x11
 
 #define DS3231_OSF_BITMASK  0x80
 #define DS3231_EOSC_BITMASK 0x80
@@ -283,3 +285,24 @@ esp_err_t ds3231_get_time(ds3231_handle_t ds3231_handle, struct tm *timeinfo, bo
         return ret;
 }
 
+esp_err_t ds3231_get_temperature(ds3231_handle_t ds3231_handle, float *temp){
+    esp_err_t ret = ESP_OK;
+
+    ds3231_dev_t *rtc = (ds3231_dev_t *)ds3231_handle;
+
+    ESP_GOTO_ON_ERROR(s_precond_checks(rtc), err, TAG, "Invalid or uninitialized device");
+    ESP_GOTO_ON_FALSE(temp != NULL, ESP_ERR_INVALID_ARG, err, TAG, "\"temp\" must not be NULL");
+
+    uint8_t temp_addr = DS3231_ADDR_TEMP;;
+    uint8_t temp_buf[2];
+
+    ESP_GOTO_ON_ERROR(i2c_master_transmit_receive(rtc->i2c_handle, &temp_addr, 1, temp_buf, 2, DS3231_TIMEOUT_MS), err,
+                      TAG, "Failed to read temp registers");
+
+    *temp = (int8_t)temp_buf[0] + (temp_buf[1] >> 6) * 0.25f;
+
+    return ret;
+
+    err:
+        return ret;
+}
