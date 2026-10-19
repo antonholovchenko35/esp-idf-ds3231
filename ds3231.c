@@ -446,3 +446,27 @@ esp_err_t ds3231_squarewave_32khz_enable(ds3231_handle_t ds3231_handle){
     err:
         return ret;
 }
+
+esp_err_t ds3231_squarewave_32khz_disable(ds3231_handle_t ds3231_handle){
+    esp_err_t ret = ESP_OK;
+
+    ds3231_dev_t *rtc = (ds3231_dev_t *)ds3231_handle;
+
+    ESP_GOTO_ON_ERROR(s_precond_checks(rtc), err, TAG, "Invalid or uninitialized device");
+    
+    uint8_t status_reg_buf[2];
+    status_reg_buf[0] = DS3231_ADDR_STAT;
+
+    ESP_GOTO_ON_ERROR(i2c_master_transmit_receive(rtc->i2c_handle, &(status_reg_buf[0]), 1, &(status_reg_buf[1]), 1, DS3231_TIMEOUT_MS), err,
+                      TAG, "Failed to read \"enable 32kHz output\" bit from the status register");
+
+    status_reg_buf[1] &= ~(1 << 3);
+
+    ESP_GOTO_ON_ERROR(i2c_master_transmit(rtc->i2c_handle, status_reg_buf, 2, DS3231_TIMEOUT_MS), err,
+                      TAG, "Failed to write \"enable 32kHz output\" bit to the status register");
+    
+    return ret;
+
+    err:
+        return ret;
+}
