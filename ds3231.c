@@ -374,3 +374,27 @@ esp_err_t ds3231_squarewave_set_freq(ds3231_handle_t ds3231_handle, ds3231_squar
     err:
         return ret;
 }
+
+esp_err_t ds3231_squarewave_enable(ds3231_handle_t ds3231_handle){
+    esp_err_t ret = ESP_OK;
+
+    ds3231_dev_t *rtc = (ds3231_dev_t *)ds3231_handle;
+
+    ESP_GOTO_ON_ERROR(s_precond_checks(rtc), err, TAG, "Invalid or uninitialized device");
+
+    uint8_t cntrl_reg_buf[2];
+    cntrl_reg_buf[0] = DS3231_ADDR_CNTRL;
+
+    ESP_GOTO_ON_ERROR(i2c_master_transmit_receive(rtc->i2c_handle, &(cntrl_reg_buf[0]), 1, &(cntrl_reg_buf[1]), 1, DS3231_TIMEOUT_MS), err,
+                      TAG, "Failed to read interupt control from the control register");
+
+    cntrl_reg_buf[1] &= ~(1 << 2);
+
+    ESP_GOTO_ON_ERROR(i2c_master_transmit(rtc->i2c_handle, cntrl_reg_buf, 2, DS3231_TIMEOUT_MS), err,
+                      TAG, "Failed to write interupt control to the control register");
+
+    return ret;
+
+    err:
+        return ret;
+}
