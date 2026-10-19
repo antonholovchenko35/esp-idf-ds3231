@@ -20,6 +20,7 @@
 #define DS3231_ADDR_TEMP    0x11
 
 #define DS3231_OSF_BITMASK  0x80
+#define DS3231_FREQ_BITMASK 0x18
 #define DS3231_EOSC_BITMASK 0x80
 
 static const char *TAG = "DS3231";
@@ -342,6 +343,31 @@ esp_err_t ds3231_set_aging(ds3231_handle_t ds3231_handle, int8_t age){
 
     ESP_GOTO_ON_ERROR(i2c_master_transmit(rtc->i2c_handle, aging_buf, 2, DS3231_TIMEOUT_MS), err,
                       TAG, "Failed to write aging register");
+
+    return ret;
+
+    err:
+        return ret;
+}
+
+esp_err_t ds3231_squarewave_set_freq(ds3231_handle_t ds3231_handle, ds3231_squarewave_freq_t freq){
+    esp_err_t ret = ESP_OK;
+
+    ds3231_dev_t *rtc = (ds3231_dev_t *)ds3231_handle;
+
+    ESP_GOTO_ON_ERROR(s_precond_checks(rtc), err, TAG, "Invalid or uninitialized device");
+
+    uint8_t cntrl_reg_buf[2];
+    cntrl_reg_buf[0] = DS3231_ADDR_CNTRL;
+
+    ESP_GOTO_ON_ERROR(i2c_master_transmit_receive(rtc->i2c_handle, &(cntrl_reg_buf[0]), 1, &(cntrl_reg_buf[1]), 1, DS3231_TIMEOUT_MS), err,
+                      TAG, "Failed to read frequency from the control register");
+    
+    cntrl_reg_buf[1] &= ~DS3231_FREQ_BITMASK;
+    cntrl_reg_buf[1] |= freq;
+
+    ESP_GOTO_ON_ERROR(i2c_master_transmit(rtc->i2c_handle, cntrl_reg_buf, 2, DS3231_TIMEOUT_MS), err,
+                      TAG, "Failed to write frequency to the control register");
 
     return ret;
 

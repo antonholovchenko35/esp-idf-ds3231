@@ -21,6 +21,13 @@ typedef enum {
     DS3231_TIME_FORMAT_24H /**< 24-hour format */
 } ds3231_time_format_t;
 
+typedef enum {
+    DS3231_FREQ_1HZ    = 0x00,
+    DS3231_FREQ_1024HZ = 0x08,
+    DS3231_FREQ_4096HZ = 0x10,
+    DS3231_FREQ_8192HZ = 0x18
+} ds3231_squarewave_freq_t;
+
 typedef void *ds3231_handle_t;
 
 /**
@@ -148,6 +155,39 @@ esp_err_t ds3231_get_aging(ds3231_handle_t ds3231_handle, int8_t *age);
  * @return ESP_OK on success
  */
 esp_err_t ds3231_set_aging(ds3231_handle_t ds3231_handle, int8_t age);
+
+/**
+ * @brief Set square wave frequency
+ * 
+ * @param[in] ds3231_handle Device handle
+ * @param[in] freq Frequency to set
+ * 
+ * @return ESP_OK on success
+ */
+esp_err_t ds3231_squarewave_set_freq(ds3231_handle_t ds3231_handle, ds3231_squarewave_freq_t freq);
+
+/**
+ * @brief Enable generating of the square wave
+ * 
+ * @note Set the square wave frequency with the ds3231_squarewave_set_freq() function first.
+ *       Otherwise, the value currently stored in the device will be used.
+ * 
+ * @warning Enabling the square wave, you automatically disable alarm interrupts
+ *  
+ * @param[in] ds3231_handle Device handle
+ * 
+ * @return ESP_OK on success
+ */
+esp_err_t ds3231_squarewave_enable(ds3231_handle_t ds3231_handle);
+
+/**
+ * @brief Disable generating of the square wave
+ * 
+ * @param[in] ds3231_handle Device handle
+ * 
+ * @return ESP_OK on success
+ */
+esp_err_t ds3231_squarewave_disable(ds3231_handle_t ds3231_handle);
 
 #ifdef __cplusplus
 }
