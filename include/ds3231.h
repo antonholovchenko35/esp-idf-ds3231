@@ -189,6 +189,42 @@ esp_err_t ds3231_squarewave_enable(ds3231_handle_t ds3231_handle);
  */
 esp_err_t ds3231_squarewave_disable(ds3231_handle_t ds3231_handle);
 
+/**
+ * @brief Allow the device to run the square wave when powered from the battery
+ * 
+ * @param[in] ds3231_handle Device handle
+ * 
+ * @return ESP_OK on success
+ */
+esp_err_t ds3231_squarewave_battery_enable(ds3231_handle_t ds3231_handle);
+
+/**
+ * @brief Disallow the device to run the square wave when powered from the battery
+ * 
+ * @param[in] ds3231_handle Device handle
+ * 
+ * @return ESP_OK on success
+ */
+esp_err_t ds3231_squarewave_battery_disable(ds3231_handle_t ds3231_handle);
+
+/**
+ * @brief Enable 32 kHz output
+ * 
+ * @param[in] ds3231_handle Device handle
+ * 
+ * @return ESP_OK on success
+ */
+esp_err_t ds3231_squarewave_32khz_enable(ds3231_handle_t ds3231_handle);
+
+/**
+ * @brief Disable 32 kHz output
+ * 
+ * @param[in] ds3231_handle Device handle
+ * 
+ * @return ESP_OK on success
+ */
+esp_err_t ds3231_squarewave_32khz_disable(ds3231_handle_t ds3231_handle);
+
 #ifdef __cplusplus
 }
 #endif
