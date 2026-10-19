@@ -328,3 +328,23 @@ esp_err_t ds3231_get_aging(ds3231_handle_t ds3231_handle, int8_t *age){
     err:
         return ret;
 }
+
+esp_err_t ds3231_set_aging(ds3231_handle_t ds3231_handle, int8_t age){
+    esp_err_t ret = ESP_OK;
+
+    ds3231_dev_t *rtc = (ds3231_dev_t *)ds3231_handle;
+
+    ESP_GOTO_ON_ERROR(s_precond_checks(rtc), err, TAG, "Invalid or uninitialized device");
+
+    uint8_t aging_buf[2]; 
+    aging_buf[0] = DS3231_ADDR_AGING;
+    aging_buf[1] = (uint8_t)age;
+
+    ESP_GOTO_ON_ERROR(i2c_master_transmit(rtc->i2c_handle, aging_buf, 2, DS3231_TIMEOUT_MS), err,
+                      TAG, "Failed to write aging register");
+
+    return ret;
+
+    err:
+        return ret;
+}
