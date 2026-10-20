@@ -150,7 +150,7 @@ esp_err_t ds3231_get_aging(ds3231_handle_t ds3231_handle, int8_t *age);
  * @brief Set the aging offset
  * 
  * @param[in] ds3231_handle Device handle
- * @param[out] age Aging offset in range -128..127
+ * @param[in] age Aging offset in range -128..127
  * 
  * @return ESP_OK on success
  */
@@ -165,6 +165,16 @@ esp_err_t ds3231_set_aging(ds3231_handle_t ds3231_handle, int8_t age);
  * @return ESP_OK on success
  */
 esp_err_t ds3231_squarewave_set_freq(ds3231_handle_t ds3231_handle, ds3231_squarewave_freq_t freq);
+
+/**
+ * @brief Get square wave frequency
+ * 
+ * @param[in] ds3231_handle Device handle
+ * @param[out] freq Frequency read from the device
+ * 
+ * @return ESP_OK on success
+ */
+esp_err_t ds3231_squarewave_get_freq(ds3231_handle_t ds3231_handle, ds3231_squarewave_freq_t *freq);
 
 /**
  * @brief Enable generating of the square wave

@@ -57,8 +57,8 @@ static esp_err_t s_precond_checks(ds3231_dev_t *rtc){
  * 
  * @param[in] rtc rtc dev
  * @param[in] reg_addr register address
- * @param[in] mask bitmask of the necessary registers to clear
- * @param[in] val the new value to be written to the registers
+ * @param[in] mask bitmask of the necessary bits to clear
+ * @param[in] val the new value to be written to the bits
  */
 static esp_err_t s_modify_reg(ds3231_dev_t *rtc, uint8_t reg_addr, uint8_t mask, uint8_t val){
     uint8_t reg_buf[2];
@@ -355,6 +355,32 @@ esp_err_t ds3231_squarewave_set_freq(ds3231_handle_t ds3231_handle, ds3231_squar
                         TAG, "The freq out of range. See ds3231_squarewave_freq_t for the allowed values");
                         
     return s_modify_reg(rtc, DS3231_ADDR_CNTRL, DS3231_FREQ_BITMASK, freq);
+}
+
+esp_err_t ds3231_squarewave_get_freq(ds3231_handle_t ds3231_handle, ds3231_squarewave_freq_t *freq){
+    ds3231_dev_t *rtc = (ds3231_dev_t *)ds3231_handle;
+    
+    ESP_RETURN_ON_ERROR(s_precond_checks(rtc), TAG, "Invalid or uninitialized device");
+
+    uint8_t cntrl_addr = DS3231_ADDR_CNTRL;
+    uint8_t cntrl_read;
+
+    ESP_RETURN_ON_ERROR(i2c_master_transmit_receive(rtc->i2c_handle, &cntrl_addr, 1, &cntrl_read, 1, DS3231_TIMEOUT_MS),
+                        TAG, "Failed to read control register");
+
+    cntrl_read &= DS3231_FREQ_BITMASK;
+
+    switch (cntrl_read) {
+        case DS3231_FREQ_1HZ:
+        case DS3231_FREQ_1024HZ:
+        case DS3231_FREQ_4096HZ:
+        case DS3231_FREQ_8192HZ:
+            *freq = (ds3231_squarewave_freq_t)cntrl_read;
+            return ESP_OK;
+
+        default:
+            return ESP_ERR_INVALID_RESPONSE;
+    }
 }
 
 esp_err_t ds3231_squarewave_enable(ds3231_handle_t ds3231_handle){
