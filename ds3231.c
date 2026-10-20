@@ -24,6 +24,7 @@
 #define DS3231_EOSC_BITMASK             0x80
 #define DS3231_ALARM1_INTERR_BITMASK    0x01
 #define DS3231_ALARM2_INTERR_BITMASK    0x02
+#define DS3231_ALARM_FLAG_BITMASK       0x03
 
 static const char *TAG = "DS3231";
 
@@ -463,4 +464,31 @@ esp_err_t ds3231_alarm2_interr_disable(ds3231_handle_t ds3231_handle){
     ESP_RETURN_ON_ERROR(s_precond_checks(rtc), TAG, "Invalid or uninitialized device");
 
     return s_modify_reg(rtc, DS3231_ADDR_CNTRL, DS3231_ALARM2_INTERR_BITMASK, 0);
+}
+
+esp_err_t ds3231_alarm_get_flag(ds3231_handle_t ds3231_handle, ds3231_alarm_interr_occur_t *interr){
+    ds3231_dev_t *rtc = (ds3231_dev_t *)ds3231_handle;
+    
+    ESP_RETURN_ON_FALSE(interr != NULL, ESP_ERR_INVALID_ARG, TAG, "\"interr\" must not be NULL");
+    ESP_RETURN_ON_ERROR(s_precond_checks(rtc), TAG, "Invalid or uninitialized device");
+
+    uint8_t status_addr = DS3231_ADDR_STAT;
+    uint8_t status_read;
+
+    ESP_RETURN_ON_ERROR(i2c_master_transmit_receive(rtc->i2c_handle, &status_addr, 1, &status_read, 1, DS3231_TIMEOUT_MS),
+                        TAG, "Failed to read status register");
+
+    status_read &= DS3231_ALARM_FLAG_BITMASK;
+
+    switch (status_read) {
+        case DS3231_ALARM_NO_INTERR:
+        case DS3231_ALARM1_INTERR:
+        case DS3231_ALARM2_INTERR:
+        case DS3231_ALARM1_ALARM2_INTERR:
+            *interr = (ds3231_alarm_interr_occur_t)status_read;
+            return ESP_OK;
+
+        default:
+            return ESP_ERR_INVALID_RESPONSE;
+    }
 }

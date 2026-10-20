@@ -29,6 +29,13 @@ typedef enum {
 } ds3231_squarewave_freq_t;
 
 typedef enum {
+    DS3231_ALARM_NO_INTERR      = 0x00,
+    DS3231_ALARM1_INTERR        = 0x01,
+    DS3231_ALARM2_INTERR        = 0x02,
+    DS3231_ALARM1_ALARM2_INTERR = 0x03
+} ds3231_alarm_interr_occur_t;
+
+typedef enum {
     PASS
 } ds3231_alarm1_interr_t;
 
@@ -264,6 +271,10 @@ esp_err_t ds3231_alarm2_interr_disable(ds3231_handle_t ds3231_handle);
 esp_err_t ds3231_alarm2_set_interr(ds3231_handle_t ds3231_handle);
 
 esp_err_t ds3231_alarm2_get_interr(ds3231_handle_t ds3231_handle);
+
+esp_err_t ds3231_alarm_get_flag(ds3231_handle_t ds3231_handle, ds3231_alarm_interr_occur_t *interr);
+
+esp_err_t ds3231_alarm_set_flag(ds3231_handle_t ds3231_handle, ds3231_alarm_interr_occur_t interr);
 
 #ifdef __cplusplus
 }
