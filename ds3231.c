@@ -492,3 +492,13 @@ esp_err_t ds3231_alarm_get_flag(ds3231_handle_t ds3231_handle, ds3231_alarm_inte
             return ESP_ERR_INVALID_RESPONSE;
     }
 }
+
+esp_err_t ds3231_alarm_set_flag(ds3231_handle_t ds3231_handle, ds3231_alarm_interr_occur_t interr){
+    ds3231_dev_t *rtc = (ds3231_dev_t *)ds3231_handle;
+    
+    ESP_RETURN_ON_ERROR(s_precond_checks(rtc), TAG, "Invalid or uninitialized device");
+    ESP_RETURN_ON_FALSE(!(interr & ~DS3231_ALARM_FLAG_BITMASK), ESP_ERR_INVALID_ARG,
+                        TAG, "The interr out of range. See ds3231_alarm_interr_occur_t for the allowed values");
+                        
+    return s_modify_reg(rtc, DS3231_ADDR_STAT, DS3231_ALARM_FLAG_BITMASK, ~interr & DS3231_ALARM_FLAG_BITMASK);
+}
