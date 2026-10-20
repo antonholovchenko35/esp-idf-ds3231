@@ -52,6 +52,29 @@ static esp_err_t s_precond_checks(ds3231_dev_t *rtc){
     return ESP_OK;
 }
 
+/**
+ * @brief Modify register
+ * 
+ * @param[in] rtc rtc dev
+ * @param[in] reg_addr register address
+ * @param[in] mask bitmask of the necessary registers to clear
+ * @param[in] val the new value to be written to the registers
+ */
+static esp_err_t s_modify_reg(ds3231_dev_t *rtc, uint8_t reg_addr, uint8_t mask, uint8_t val){
+    uint8_t reg_buf[2];
+    reg_buf[0] = reg_addr;
+
+    ESP_RETURN_ON_ERROR(i2c_master_transmit_receive(rtc->i2c_handle, &(reg_buf[0]), 1, &(reg_buf[1]), 1, DS3231_TIMEOUT_MS),
+                        TAG, "Failed to read register 0x%02X", reg_addr);
+
+    reg_buf[1] = (reg_buf[1] & ~mask) | val;
+
+    ESP_RETURN_ON_ERROR(i2c_master_transmit(rtc->i2c_handle, reg_buf, 2, DS3231_TIMEOUT_MS),
+                        TAG, "Failed to write register 0x%02X", reg_addr);
+
+    return ESP_OK;
+}
+
 esp_err_t ds3231_create(i2c_master_bus_handle_t i2c_bus, ds3231_handle_t *ds3231_handle){
     esp_err_t ret = ESP_OK;
 
@@ -140,30 +163,14 @@ esp_err_t ds3231_osc_battery_get_status(ds3231_handle_t ds3231_handle, bool *ena
 }
 
 esp_err_t ds3231_osc_battery_set_status(ds3231_handle_t ds3231_handle, bool enabled){
-    esp_err_t ret = ESP_OK;
-
     ds3231_dev_t *rtc = (ds3231_dev_t *)ds3231_handle;
 
-    ESP_GOTO_ON_ERROR(s_precond_checks(rtc), err, TAG, "Invalid or uninitialized device");
-    
-    uint8_t control_reg_buf[2];
-    control_reg_buf[0] = DS3231_ADDR_CNTRL;
+    ESP_RETURN_ON_ERROR(s_precond_checks(rtc), TAG, "Invalid or uninitialized device");
 
-    ESP_GOTO_ON_ERROR(i2c_master_transmit_receive(rtc->i2c_handle, &(control_reg_buf[0]), 1, &(control_reg_buf[1]), 1, DS3231_TIMEOUT_MS), err,
-                      TAG, "Failed to read control register");
-                      
     if (enabled)
-        control_reg_buf[1] &= ~DS3231_EOSC_BITMASK;
+        return s_modify_reg(rtc, DS3231_ADDR_CNTRL, DS3231_EOSC_BITMASK, 0);
     else
-        control_reg_buf[1] |= DS3231_EOSC_BITMASK;
-        
-    ESP_GOTO_ON_ERROR(i2c_master_transmit(rtc->i2c_handle, control_reg_buf, 2, DS3231_TIMEOUT_MS), err,
-                      TAG, "Failed to write control register");
-
-    return ret;
-
-    err:
-        return ret;
+        return s_modify_reg(rtc, DS3231_ADDR_CNTRL, DS3231_EOSC_BITMASK, DS3231_EOSC_BITMASK);
 }
 
 esp_err_t ds3231_get_time_format(ds3231_handle_t ds3231_handle, ds3231_time_format_t *timeformat){
@@ -222,17 +229,7 @@ esp_err_t ds3231_set_time(ds3231_handle_t ds3231_handle, struct tm timeinfo, boo
     ESP_GOTO_ON_ERROR(i2c_master_transmit(rtc->i2c_handle, data, 8, DS3231_TIMEOUT_MS), err,
                       TAG, "Failed to write time registers");
 
-    uint8_t change_osf[2];
-    change_osf[0] = DS3231_ADDR_STAT;
-
-    ESP_GOTO_ON_ERROR(i2c_master_transmit_receive(rtc->i2c_handle, &(change_osf[0]), 1, &(change_osf[1]), 1, DS3231_TIMEOUT_MS), err,
-                      TAG, "Failed to read status register");
-
-    if ((change_osf[1] & DS3231_OSF_BITMASK)){
-        change_osf[1] &= ~DS3231_OSF_BITMASK;
-        ESP_GOTO_ON_ERROR(i2c_master_transmit(rtc->i2c_handle, change_osf, 2, DS3231_TIMEOUT_MS), err,
-                                              TAG, "Failed to write status register");
-    }
+    ret = s_modify_reg(rtc, DS3231_ADDR_STAT, DS3231_OSF_BITMASK, 0);
 
     return ret;
 
@@ -351,170 +348,59 @@ esp_err_t ds3231_set_aging(ds3231_handle_t ds3231_handle, int8_t age){
 }
 
 esp_err_t ds3231_squarewave_set_freq(ds3231_handle_t ds3231_handle, ds3231_squarewave_freq_t freq){
-    esp_err_t ret = ESP_OK;
-
     ds3231_dev_t *rtc = (ds3231_dev_t *)ds3231_handle;
-
-    ESP_GOTO_ON_ERROR(s_precond_checks(rtc), err, TAG, "Invalid or uninitialized device");
-
-    uint8_t cntrl_reg_buf[2];
-    cntrl_reg_buf[0] = DS3231_ADDR_CNTRL;
-
-    ESP_GOTO_ON_ERROR(i2c_master_transmit_receive(rtc->i2c_handle, &(cntrl_reg_buf[0]), 1, &(cntrl_reg_buf[1]), 1, DS3231_TIMEOUT_MS), err,
-                      TAG, "Failed to read frequency from the control register");
     
-    cntrl_reg_buf[1] &= ~DS3231_FREQ_BITMASK;
-    cntrl_reg_buf[1] |= freq;
-
-    ESP_GOTO_ON_ERROR(i2c_master_transmit(rtc->i2c_handle, cntrl_reg_buf, 2, DS3231_TIMEOUT_MS), err,
-                      TAG, "Failed to write frequency to the control register");
-
-    return ret;
-
-    err:
-        return ret;
+    ESP_RETURN_ON_ERROR(s_precond_checks(rtc), TAG, "Invalid or uninitialized device");
+    ESP_RETURN_ON_FALSE(!(freq & ~DS3231_FREQ_BITMASK), ESP_ERR_INVALID_ARG,
+                        TAG, "The freq out of range. See ds3231_squarewave_freq_t for the allowed values");
+                        
+    return s_modify_reg(rtc, DS3231_ADDR_CNTRL, DS3231_FREQ_BITMASK, freq);
 }
 
 esp_err_t ds3231_squarewave_enable(ds3231_handle_t ds3231_handle){
-    esp_err_t ret = ESP_OK;
-
     ds3231_dev_t *rtc = (ds3231_dev_t *)ds3231_handle;
+    
+    ESP_RETURN_ON_ERROR(s_precond_checks(rtc), TAG, "Invalid or uninitialized device");
 
-    ESP_GOTO_ON_ERROR(s_precond_checks(rtc), err, TAG, "Invalid or uninitialized device");
-
-    uint8_t cntrl_reg_buf[2];
-    cntrl_reg_buf[0] = DS3231_ADDR_CNTRL;
-
-    ESP_GOTO_ON_ERROR(i2c_master_transmit_receive(rtc->i2c_handle, &(cntrl_reg_buf[0]), 1, &(cntrl_reg_buf[1]), 1, DS3231_TIMEOUT_MS), err,
-                      TAG, "Failed to read interupt control from the control register");
-
-    cntrl_reg_buf[1] &= ~(1 << 2);
-
-    ESP_GOTO_ON_ERROR(i2c_master_transmit(rtc->i2c_handle, cntrl_reg_buf, 2, DS3231_TIMEOUT_MS), err,
-                      TAG, "Failed to write interupt control to the control register");
-
-    return ret;
-
-    err:
-        return ret;
+    return s_modify_reg(rtc, DS3231_ADDR_CNTRL, (1 << 2), 0);
 }
 
 esp_err_t ds3231_squarewave_disable(ds3231_handle_t ds3231_handle){
-    esp_err_t ret = ESP_OK;
-
     ds3231_dev_t *rtc = (ds3231_dev_t *)ds3231_handle;
+    
+    ESP_RETURN_ON_ERROR(s_precond_checks(rtc), TAG, "Invalid or uninitialized device");
 
-    ESP_GOTO_ON_ERROR(s_precond_checks(rtc), err, TAG, "Invalid or uninitialized device");
-
-    uint8_t cntrl_reg_buf[2];
-    cntrl_reg_buf[0] = DS3231_ADDR_CNTRL;
-
-    ESP_GOTO_ON_ERROR(i2c_master_transmit_receive(rtc->i2c_handle, &(cntrl_reg_buf[0]), 1, &(cntrl_reg_buf[1]), 1, DS3231_TIMEOUT_MS), err,
-                      TAG, "Failed to read interupt control from the control register");
-
-    cntrl_reg_buf[1] |= (1 << 2);
-
-    ESP_GOTO_ON_ERROR(i2c_master_transmit(rtc->i2c_handle, cntrl_reg_buf, 2, DS3231_TIMEOUT_MS), err,
-                      TAG, "Failed to write interupt control to the control register");
-
-    return ret;
-
-    err:
-        return ret;
+    return s_modify_reg(rtc, DS3231_ADDR_CNTRL, (1 << 2), (1 << 2));
 }
 
 esp_err_t ds3231_squarewave_battery_enable(ds3231_handle_t ds3231_handle){
-    esp_err_t ret = ESP_OK;
-
     ds3231_dev_t *rtc = (ds3231_dev_t *)ds3231_handle;
+    
+    ESP_RETURN_ON_ERROR(s_precond_checks(rtc), TAG, "Invalid or uninitialized device");
 
-    ESP_GOTO_ON_ERROR(s_precond_checks(rtc), err, TAG, "Invalid or uninitialized device");
-
-    uint8_t cntrl_reg_buf[2];
-    cntrl_reg_buf[0] = DS3231_ADDR_CNTRL;
-
-    ESP_GOTO_ON_ERROR(i2c_master_transmit_receive(rtc->i2c_handle, &(cntrl_reg_buf[0]), 1, &(cntrl_reg_buf[1]), 1, DS3231_TIMEOUT_MS), err,
-                      TAG, "Failed to read \"battery-backed square wave\" from the control register");
-
-    cntrl_reg_buf[1] |= (1 << 6);
-
-    ESP_GOTO_ON_ERROR(i2c_master_transmit(rtc->i2c_handle, cntrl_reg_buf, 2, DS3231_TIMEOUT_MS), err,
-                      TAG, "Failed to write \"battery-backed square wave\" to the control register");
-
-    return ret;
-
-    err:
-        return ret;
+    return s_modify_reg(rtc, DS3231_ADDR_CNTRL, (1 << 6), (1 << 6));
 }
 
 esp_err_t ds3231_squarewave_battery_disable(ds3231_handle_t ds3231_handle){
-    esp_err_t ret = ESP_OK;
-
     ds3231_dev_t *rtc = (ds3231_dev_t *)ds3231_handle;
+    
+    ESP_RETURN_ON_ERROR(s_precond_checks(rtc), TAG, "Invalid or uninitialized device");
 
-    ESP_GOTO_ON_ERROR(s_precond_checks(rtc), err, TAG, "Invalid or uninitialized device");
-
-    uint8_t cntrl_reg_buf[2];
-    cntrl_reg_buf[0] = DS3231_ADDR_CNTRL;
-
-    ESP_GOTO_ON_ERROR(i2c_master_transmit_receive(rtc->i2c_handle, &(cntrl_reg_buf[0]), 1, &(cntrl_reg_buf[1]), 1, DS3231_TIMEOUT_MS), err,
-                      TAG, "Failed to read \"battery-backed square wave\" from the control register");
-
-    cntrl_reg_buf[1] &= ~(1 << 6);
-
-    ESP_GOTO_ON_ERROR(i2c_master_transmit(rtc->i2c_handle, cntrl_reg_buf, 2, DS3231_TIMEOUT_MS), err,
-                      TAG, "Failed to write \"battery-backed square wave\" to the control register");
-
-    return ret;
-
-    err:
-        return ret;
+    return s_modify_reg(rtc, DS3231_ADDR_CNTRL, (1 << 6), 0);
 }
 
 esp_err_t ds3231_squarewave_32khz_enable(ds3231_handle_t ds3231_handle){
-    esp_err_t ret = ESP_OK;
-
     ds3231_dev_t *rtc = (ds3231_dev_t *)ds3231_handle;
 
-    ESP_GOTO_ON_ERROR(s_precond_checks(rtc), err, TAG, "Invalid or uninitialized device");
+    ESP_RETURN_ON_ERROR(s_precond_checks(rtc), TAG, "Invalid or uninitialized device");
     
-    uint8_t status_reg_buf[2];
-    status_reg_buf[0] = DS3231_ADDR_STAT;
-
-    ESP_GOTO_ON_ERROR(i2c_master_transmit_receive(rtc->i2c_handle, &(status_reg_buf[0]), 1, &(status_reg_buf[1]), 1, DS3231_TIMEOUT_MS), err,
-                      TAG, "Failed to read \"enable 32kHz output\" bit from the status register");
-
-    status_reg_buf[1] |= (1 << 3);
-
-    ESP_GOTO_ON_ERROR(i2c_master_transmit(rtc->i2c_handle, status_reg_buf, 2, DS3231_TIMEOUT_MS), err,
-                      TAG, "Failed to write \"enable 32kHz output\" bit to the status register");
-    
-    return ret;
-
-    err:
-        return ret;
+    return s_modify_reg(rtc, DS3231_ADDR_STAT, (1 << 3), (1 << 3)); 
 }
 
 esp_err_t ds3231_squarewave_32khz_disable(ds3231_handle_t ds3231_handle){
-    esp_err_t ret = ESP_OK;
-
     ds3231_dev_t *rtc = (ds3231_dev_t *)ds3231_handle;
 
-    ESP_GOTO_ON_ERROR(s_precond_checks(rtc), err, TAG, "Invalid or uninitialized device");
-    
-    uint8_t status_reg_buf[2];
-    status_reg_buf[0] = DS3231_ADDR_STAT;
+    ESP_RETURN_ON_ERROR(s_precond_checks(rtc), TAG, "Invalid or uninitialized device");
 
-    ESP_GOTO_ON_ERROR(i2c_master_transmit_receive(rtc->i2c_handle, &(status_reg_buf[0]), 1, &(status_reg_buf[1]), 1, DS3231_TIMEOUT_MS), err,
-                      TAG, "Failed to read \"enable 32kHz output\" bit from the status register");
-
-    status_reg_buf[1] &= ~(1 << 3);
-
-    ESP_GOTO_ON_ERROR(i2c_master_transmit(rtc->i2c_handle, status_reg_buf, 2, DS3231_TIMEOUT_MS), err,
-                      TAG, "Failed to write \"enable 32kHz output\" bit to the status register");
-    
-    return ret;
-
-    err:
-        return ret;
+    return s_modify_reg(rtc, DS3231_ADDR_STAT, (1 << 3), 0);
 }
