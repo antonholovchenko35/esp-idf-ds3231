@@ -28,6 +28,10 @@ typedef enum {
     DS3231_FREQ_8192HZ = 0x18
 } ds3231_squarewave_freq_t;
 
+typedef enum {
+    PASS
+} ds3231_alarm1_interr_t;
+
 typedef void *ds3231_handle_t;
 
 /**
@@ -234,6 +238,32 @@ esp_err_t ds3231_squarewave_32khz_enable(ds3231_handle_t ds3231_handle);
  * @return ESP_OK on success
  */
 esp_err_t ds3231_squarewave_32khz_disable(ds3231_handle_t ds3231_handle);
+
+esp_err_t ds3231_alarm1_interr_enable(ds3231_handle_t ds3231_handle);
+
+esp_err_t ds3231_alarm1_interr_disable(ds3231_handle_t ds3231_handle);
+
+esp_err_t ds3231_alarm1_get_time(ds3231_handle_t ds3231_handle);
+
+esp_err_t ds3231_alarm1_set_time(ds3231_handle_t ds3231_handle);
+
+esp_err_t ds3231_alarm1_set_interr(ds3231_handle_t ds3231_handle);
+
+esp_err_t ds3231_alarm1_get_interr(ds3231_handle_t ds3231_handle);
+
+esp_err_t ds3231_alarm_interr_get_status(ds3231_handle_t ds3231_handle);
+
+esp_err_t ds3231_alarm2_get_time(ds3231_handle_t ds3231_handle);
+
+esp_err_t ds3231_alarm2_set_time(ds3231_handle_t ds3231_handle);
+
+esp_err_t ds3231_alarm2_interr_enable(ds3231_handle_t ds3231_handle);
+
+esp_err_t ds3231_alarm2_interr_disable(ds3231_handle_t ds3231_handle);
+
+esp_err_t ds3231_alarm2_set_interr(ds3231_handle_t ds3231_handle);
+
+esp_err_t ds3231_alarm2_get_interr(ds3231_handle_t ds3231_handle);
 
 #ifdef __cplusplus
 }

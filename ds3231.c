@@ -6,22 +6,24 @@
 #include "driver/i2c_master.h"
 #include "esp_check.h"
 
-#define DS3231_ADDR_SEC     0x00
-#define DS3231_ADDR_MIN     0x01
-#define DS3231_ADDR_HOUR    0x02
-#define DS3231_ADDR_DAY     0x03
-#define DS3231_ADDR_DATE    0x04
-#define DS3231_ADDR_MONTH   0x05
-#define DS3231_ADDR_YEAR    0x06
+#define DS3231_ADDR_SEC                 0x00
+#define DS3231_ADDR_MIN                 0x01
+#define DS3231_ADDR_HOUR                0x02
+#define DS3231_ADDR_DAY                 0x03
+#define DS3231_ADDR_DATE                0x04
+#define DS3231_ADDR_MONTH               0x05
+#define DS3231_ADDR_YEAR                0x06
 
-#define DS3231_ADDR_CNTRL   0x0E
-#define DS3231_ADDR_STAT    0x0F
-#define DS3231_ADDR_AGING   0x10
-#define DS3231_ADDR_TEMP    0x11
+#define DS3231_ADDR_CNTRL               0x0E
+#define DS3231_ADDR_STAT                0x0F
+#define DS3231_ADDR_AGING               0x10
+#define DS3231_ADDR_TEMP                0x11
 
-#define DS3231_OSF_BITMASK  0x80
-#define DS3231_FREQ_BITMASK 0x18
-#define DS3231_EOSC_BITMASK 0x80
+#define DS3231_OSF_BITMASK              0x80
+#define DS3231_FREQ_BITMASK             0x18
+#define DS3231_EOSC_BITMASK             0x80
+#define DS3231_ALARM1_INTERR_BITMASK    0x01
+#define DS3231_ALARM2_INTERR_BITMASK    0x02
 
 static const char *TAG = "DS3231";
 
@@ -429,4 +431,36 @@ esp_err_t ds3231_squarewave_32khz_disable(ds3231_handle_t ds3231_handle){
     ESP_RETURN_ON_ERROR(s_precond_checks(rtc), TAG, "Invalid or uninitialized device");
 
     return s_modify_reg(rtc, DS3231_ADDR_STAT, (1 << 3), 0);
+}
+
+esp_err_t ds3231_alarm1_interr_enable(ds3231_handle_t ds3231_handle){
+    ds3231_dev_t *rtc = (ds3231_dev_t *)ds3231_handle;
+
+    ESP_RETURN_ON_ERROR(s_precond_checks(rtc), TAG, "Invalid or uninitialized device");
+
+    return s_modify_reg(rtc, DS3231_ADDR_CNTRL, DS3231_ALARM1_INTERR_BITMASK, DS3231_ALARM1_INTERR_BITMASK);
+}
+
+esp_err_t ds3231_alarm1_interr_disable(ds3231_handle_t ds3231_handle){
+    ds3231_dev_t *rtc = (ds3231_dev_t *)ds3231_handle;
+
+    ESP_RETURN_ON_ERROR(s_precond_checks(rtc), TAG, "Invalid or uninitialized device");
+
+    return s_modify_reg(rtc, DS3231_ADDR_CNTRL, DS3231_ALARM1_INTERR_BITMASK, 0);
+}
+
+esp_err_t ds3231_alarm2_interr_enable(ds3231_handle_t ds3231_handle){
+    ds3231_dev_t *rtc = (ds3231_dev_t *)ds3231_handle;
+
+    ESP_RETURN_ON_ERROR(s_precond_checks(rtc), TAG, "Invalid or uninitialized device");
+
+    return s_modify_reg(rtc, DS3231_ADDR_CNTRL, DS3231_ALARM2_INTERR_BITMASK, DS3231_ALARM2_INTERR_BITMASK);
+}
+
+esp_err_t ds3231_alarm2_interr_disable(ds3231_handle_t ds3231_handle){
+    ds3231_dev_t *rtc = (ds3231_dev_t *)ds3231_handle;
+
+    ESP_RETURN_ON_ERROR(s_precond_checks(rtc), TAG, "Invalid or uninitialized device");
+
+    return s_modify_reg(rtc, DS3231_ADDR_CNTRL, DS3231_ALARM2_INTERR_BITMASK, 0);
 }
