@@ -250,7 +250,7 @@ esp_err_t ds3231_alarm1_interr_enable(ds3231_handle_t ds3231_handle);
 
 esp_err_t ds3231_alarm1_interr_disable(ds3231_handle_t ds3231_handle);
 
-esp_err_t ds3231_alarm1_get_time(ds3231_handle_t ds3231_handle);
+esp_err_t ds3231_alarm1_get_time(ds3231_handle_t ds3231_handle, struct tm *timeinfo, bool *is_pm);
 
 esp_err_t ds3231_alarm1_set_time(ds3231_handle_t ds3231_handle);
 

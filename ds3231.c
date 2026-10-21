@@ -14,6 +14,15 @@
 #define DS3231_ADDR_MONTH               0x05
 #define DS3231_ADDR_YEAR                0x06
 
+#define DS3231_ADDR_ALARM1_SEC          0x07
+#define DS3231_ADDR_ALARM1_MIN          0x08
+#define DS3231_ADDR_ALARM1_HOUR         0x09
+#define DS3231_ADDR_ALARM1_DY_DT        0x0A
+
+#define DS3231_ADDR_ALARM2_MIN          0x0B
+#define DS3231_ADDR_ALARM2_HOUR         0x0C
+#define DS3231_ADDR_ALARM2_DY_DT        0x0D
+
 #define DS3231_ADDR_CNTRL               0x0E
 #define DS3231_ADDR_STAT                0x0F
 #define DS3231_ADDR_AGING               0x10
@@ -22,6 +31,8 @@
 #define DS3231_OSF_BITMASK              0x80
 #define DS3231_FREQ_BITMASK             0x18
 #define DS3231_EOSC_BITMASK             0x80
+#define DS3231_ALARM1_DY_DT_BITMASK     0x40
+#define DS3231_ALARM1_MASKBITS_BITMASK  0x80
 #define DS3231_ALARM1_INTERR_BITMASK    0x01
 #define DS3231_ALARM2_INTERR_BITMASK    0x02
 #define DS3231_ALARM_FLAG_BITMASK       0x03
@@ -448,6 +459,60 @@ esp_err_t ds3231_alarm1_interr_disable(ds3231_handle_t ds3231_handle){
     ESP_RETURN_ON_ERROR(s_precond_checks(rtc), TAG, "Invalid or uninitialized device");
 
     return s_modify_reg(rtc, DS3231_ADDR_CNTRL, DS3231_ALARM1_INTERR_BITMASK, 0);
+}
+
+esp_err_t ds3231_alarm1_get_time(ds3231_handle_t ds3231_handle, struct tm *timeinfo, bool *is_pm){
+    esp_err_t ret = ESP_OK;
+    ds3231_dev_t *rtc = (ds3231_dev_t *)ds3231_handle;
+
+    ESP_GOTO_ON_ERROR(s_precond_checks(rtc), err, TAG, "Invalid or uninitialized device");
+    ESP_GOTO_ON_FALSE(timeinfo != NULL, ESP_ERR_INVALID_ARG, err,
+                      TAG, "\"timeinfo\" must not be NULL");
+
+    uint8_t data_buf_write = DS3231_ADDR_ALARM1_SEC;
+    uint8_t data_buf_read[4];
+
+    ESP_GOTO_ON_ERROR(i2c_master_transmit_receive(rtc->i2c_handle, &data_buf_write, 1, data_buf_read, 4, DS3231_TIMEOUT_MS), err,
+                      TAG, "Failed to read alarm1 registers for time");
+
+
+    for (size_t i = 0; i < 4; ++i)
+        data_buf_read[i] &= ~DS3231_ALARM1_MASKBITS_BITMASK;
+    
+
+    // check the format of time
+    if (data_buf_read[2] & (1 << 6)){
+        ESP_GOTO_ON_FALSE(is_pm != NULL, ESP_ERR_INVALID_ARG, err, TAG, "is_pm must be not NULL in 12-hour mode");
+
+        data_buf_read[2] &= ~(1 << 6);
+        
+        if (data_buf_read[2] & (1 << 5))
+            *is_pm = true;
+        else
+            *is_pm = false;
+
+        data_buf_read[2] &= ~(1 << 5);
+    }
+
+    s_convert_from_bcd(data_buf_read, sizeof(data_buf_read) - 1);
+
+    timeinfo->tm_sec = data_buf_read[0];
+    timeinfo->tm_min = data_buf_read[1];
+    timeinfo->tm_hour = data_buf_read[2];
+
+    if (data_buf_read[3] & DS3231_ALARM1_DY_DT_BITMASK){
+        data_buf_read[3] &= ~DS3231_ALARM1_DY_DT_BITMASK;
+        s_convert_from_bcd(&(data_buf_read[3]), 1);
+        timeinfo->tm_wday = data_buf_read[3] - 1;
+    }else{
+        s_convert_from_bcd(&(data_buf_read[3]), 1);
+        timeinfo->tm_mday = data_buf_read[3];
+    }
+
+    return ret;
+
+    err:
+        return ret;
 }
 
 esp_err_t ds3231_alarm2_interr_enable(ds3231_handle_t ds3231_handle){
