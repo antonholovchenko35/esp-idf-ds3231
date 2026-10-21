@@ -515,6 +515,47 @@ esp_err_t ds3231_alarm1_get_time(ds3231_handle_t ds3231_handle, struct tm *timei
         return ret;
 }
 
+esp_err_t ds3231_alarm1_set_time(ds3231_handle_t ds3231_handle, struct tm timeinfo, bool *is_pm){
+    esp_err_t ret = ESP_OK;
+    ds3231_dev_t *rtc = (ds3231_dev_t *)ds3231_handle;
+
+    ESP_GOTO_ON_ERROR(s_precond_checks(rtc), err, TAG, "Invalid or uninitialized device");
+    ESP_GOTO_ON_FALSE((is_pm == NULL && timeinfo.tm_hour >= 0 && timeinfo.tm_hour <= 23)
+                      || (is_pm != NULL && timeinfo.tm_hour >= 1 && timeinfo.tm_hour <= 12),
+                      ESP_ERR_INVALID_ARG, err, TAG, "tm_hour is out of range for the selected time format");
+
+    uint8_t data[5];
+
+    data[0] = DS3231_ADDR_ALARM1_SEC;
+    data[1] = s_convert_to_bcd(timeinfo.tm_sec);
+    data[2] = s_convert_to_bcd(timeinfo.tm_min);
+
+    if (is_pm == NULL)
+        data[3] = s_convert_to_bcd(timeinfo.tm_hour);
+    else if (*is_pm == true)
+        data[3] = s_convert_to_bcd(timeinfo.tm_hour) | (1 << 5) | (1 << 6);
+    else
+        data[3] = s_convert_to_bcd(timeinfo.tm_hour) | (1 << 6);
+
+    uint8_t dy_dt_addr = DS3231_ADDR_ALARM1_DY_DT;
+    uint8_t dy_dt_read;
+    ESP_GOTO_ON_ERROR(i2c_master_transmit_receive(rtc->i2c_handle, &dy_dt_addr, 1, &dy_dt_read, 1, DS3231_TIMEOUT_MS), err,
+                      TAG, "Failed to read DY/DT bits");
+
+    if (dy_dt_read & DS3231_ALARM1_DY_DT_BITMASK){
+        data[4] = s_convert_to_bcd(timeinfo.tm_wday + 1) | DS3231_ALARM1_DY_DT_BITMASK;
+    } else
+        data[4] = s_convert_to_bcd(timeinfo.tm_mday);
+
+    ESP_GOTO_ON_ERROR(i2c_master_transmit(rtc->i2c_handle, data, 5, DS3231_TIMEOUT_MS), err,
+                      TAG, "Failed to write alarm1 registers");
+
+    return ret;
+
+    err:
+        return ret;
+}
+
 esp_err_t ds3231_alarm2_interr_enable(ds3231_handle_t ds3231_handle){
     ds3231_dev_t *rtc = (ds3231_dev_t *)ds3231_handle;
 
