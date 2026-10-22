@@ -515,7 +515,7 @@ esp_err_t ds3231_alarm1_get_time(ds3231_handle_t ds3231_handle, struct tm *timei
         return ret;
 }
 
-esp_err_t ds3231_alarm1_set_time(ds3231_handle_t ds3231_handle, struct tm timeinfo, bool *is_pm){
+esp_err_t ds3231_alarm1_set_time(ds3231_handle_t ds3231_handle, ds3231_alarm1_interr_t interr, struct tm timeinfo, bool *is_pm){
     esp_err_t ret = ESP_OK;
     ds3231_dev_t *rtc = (ds3231_dev_t *)ds3231_handle;
 
@@ -537,15 +537,43 @@ esp_err_t ds3231_alarm1_set_time(ds3231_handle_t ds3231_handle, struct tm timein
     else
         data[3] = s_convert_to_bcd(timeinfo.tm_hour) | (1 << 6);
 
-    uint8_t dy_dt_addr = DS3231_ADDR_ALARM1_DY_DT;
-    uint8_t dy_dt_read;
-    ESP_GOTO_ON_ERROR(i2c_master_transmit_receive(rtc->i2c_handle, &dy_dt_addr, 1, &dy_dt_read, 1, DS3231_TIMEOUT_MS), err,
-                      TAG, "Failed to read DY/DT bits");
-
-    if (dy_dt_read & DS3231_ALARM1_DY_DT_BITMASK){
-        data[4] = s_convert_to_bcd(timeinfo.tm_wday + 1) | DS3231_ALARM1_DY_DT_BITMASK;
-    } else
-        data[4] = s_convert_to_bcd(timeinfo.tm_mday);
+/*
+typedef enum {
+    DS3231_ALARM1_INTERR_PER_SEC,
+    DS3231_ALARM1_INTERR_MATCH_SEC,
+    DS3231_ALARM1_INTERR_MATCH_MINSEC,
+    DS3231_ALARM1_INTERR_MATCH_HOURMINSEC,
+    DS3231_ALARM1_INTERR_DYHOURMINSEC,
+    DS3231_ALARM1_INTERR_DTHOURMINSEC
+} ds3231_alarm1_interr_t;*/
+    switch (interr) {
+        case DS3231_ALARM1_INTERR_PER_SEC:
+            for (size_t i = 4; i >= 1; --i)
+                data[i] |= (1 << 7);
+            break;
+        case DS3231_ALARM1_INTERR_MATCH_SEC:
+            for (size_t i = 4; i >= 2; --i)
+                data[i] |= (1 << 7);
+            break;
+        case DS3231_ALARM1_INTERR_MATCH_MINSEC:
+            for (size_t i = 4; i >= 3; --i)
+                data[i] |= (1 << 7);
+            break;
+        case DS3231_ALARM1_INTERR_MATCH_HOURMINSEC:
+            data[4] |= (1 << 7);
+            break;
+        case DS3231_ALARM1_INTERR_DYHOURMINSEC:
+            data[4] = s_convert_to_bcd(timeinfo.tm_wday + 1);
+            data[4] |= (1 << 6);
+            break;
+        case DS3231_ALARM1_INTERR_DTHOURMINSEC:
+            data[4] = s_convert_to_bcd(timeinfo.tm_mday);
+            data[4] &= ~(1 << 6);
+            break;
+        default:
+            ESP_LOGE(TAG, "Invalid interr arg");
+            return ESP_ERR_INVALID_ARG;
+    }
 
     ESP_GOTO_ON_ERROR(i2c_master_transmit(rtc->i2c_handle, data, 5, DS3231_TIMEOUT_MS), err,
                       TAG, "Failed to write alarm1 registers");
