@@ -36,12 +36,12 @@ typedef enum {
 } ds3231_alarm_interr_occur_t;
 
 typedef enum {
-    DS3231_ALARM1_INTERR_PER_SEC,
-    DS3231_ALARM1_INTERR_MATCH_SEC,
-    DS3231_ALARM1_INTERR_MATCH_MINSEC,
-    DS3231_ALARM1_INTERR_MATCH_HOURMINSEC,
-    DS3231_ALARM1_INTERR_DYHOURMINSEC,
-    DS3231_ALARM1_INTERR_DTHOURMINSEC
+    DS3231_ALARM1_INTERR_PER_SEC          = 0x0F,   
+    DS3231_ALARM1_INTERR_MATCH_SEC        = 0x0E,   
+    DS3231_ALARM1_INTERR_MATCH_MINSEC     = 0x0C,       
+    DS3231_ALARM1_INTERR_MATCH_HOURMINSEC = 0x08,           
+    DS3231_ALARM1_INTERR_DYHOURMINSEC     = 0x01,
+    DS3231_ALARM1_INTERR_DTHOURMINSEC     = 0x00
 } ds3231_alarm1_interr_t;
 
 typedef void *ds3231_handle_t;
@@ -255,7 +255,7 @@ esp_err_t ds3231_alarm1_interr_enable(ds3231_handle_t ds3231_handle);
 
 esp_err_t ds3231_alarm1_interr_disable(ds3231_handle_t ds3231_handle);
 
-esp_err_t ds3231_alarm1_get_time(ds3231_handle_t ds3231_handle, struct tm *timeinfo, bool *is_pm);
+esp_err_t ds3231_alarm1_get_time(ds3231_handle_t ds3231_handle, ds3231_alarm1_interr_t *interr, struct tm *timeinfo, bool *is_pm);
 
 esp_err_t ds3231_alarm1_set_time(ds3231_handle_t ds3231_handle, ds3231_alarm1_interr_t interr, struct tm timeinfo, bool *is_pm);
 
