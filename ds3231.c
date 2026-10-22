@@ -445,6 +445,34 @@ esp_err_t ds3231_squarewave_32khz_disable(ds3231_handle_t ds3231_handle){
     return s_modify_reg(rtc, DS3231_ADDR_STAT, (1 << 3), 0);
 }
 
+esp_err_t ds3231_alarm_interr_get_status(ds3231_handle_t ds3231_handle, ds3231_alarm_interr_occur_t *interr){
+    ds3231_dev_t *rtc = (ds3231_dev_t *)ds3231_handle;
+
+    ESP_RETURN_ON_ERROR(s_precond_checks(rtc), TAG, "Invalid or uninitialized device");
+    ESP_RETURN_ON_FALSE(interr != NULL, ESP_ERR_INVALID_ARG, TAG, "\"interr\" must not be NULL");
+    
+    uint8_t cntrl_addr = DS3231_ADDR_CNTRL;
+    uint8_t cntrl_reg;
+
+    ESP_RETURN_ON_ERROR(i2c_master_transmit_receive(rtc->i2c_handle, &cntrl_addr, 1, &cntrl_reg, 1, DS3231_TIMEOUT_MS),
+                      TAG, "Failed to read control register for alarm interrupts");
+
+    cntrl_reg &= (DS3231_ALARM1_INTERR_BITMASK | DS3231_ALARM2_INTERR_BITMASK);
+
+    switch (cntrl_reg){
+        case DS3231_ALARM_NO_INTERR:
+        case DS3231_ALARM1_INTERR:
+        case DS3231_ALARM2_INTERR:
+        case DS3231_ALARM1_ALARM2_INTERR:
+            *interr = (ds3231_alarm_interr_occur_t)cntrl_reg;
+            break;
+        default:
+            return ESP_ERR_INVALID_RESPONSE;
+    }
+
+    return ESP_OK;
+}
+
 esp_err_t ds3231_alarm1_interr_enable(ds3231_handle_t ds3231_handle){
     ds3231_dev_t *rtc = (ds3231_dev_t *)ds3231_handle;
 
