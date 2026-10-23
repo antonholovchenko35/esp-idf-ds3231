@@ -29,11 +29,18 @@ typedef enum {
 } ds3231_squarewave_freq_t;
 
 typedef enum {
-    DS3231_ALARM_NO_INTERR      = 0x00,
-    DS3231_ALARM1_INTERR        = 0x01,
-    DS3231_ALARM2_INTERR        = 0x02,
-    DS3231_ALARM1_ALARM2_INTERR = 0x03
-} ds3231_alarm_interr_occur_t;
+    DS3231_ALARM_NONE   = 0x00,
+    DS3231_ALARM_A1     = 0x01,
+    DS3231_ALARM_A2     = 0x02,
+    DS3231_ALARM_A1_A2  = 0x03
+} ds3231_alarms_t;
+
+typedef enum {
+    DS3231_ALARM_NO_INTERR              = 0x00,
+    DS3231_ALARM1_FLAG_INTERR           = 0x01,
+    DS3231_ALARM2_FLAG_INTERR           = 0x02,
+    DS3231_ALARM1_ALARM2_FLAGS_INTERR   = 0x03
+} ds3231_alarm_flags_t;
 
 typedef enum {
     DS3231_ALARM1_INTERR_PER_SEC          = 0x0F,   
@@ -42,7 +49,7 @@ typedef enum {
     DS3231_ALARM1_INTERR_MATCH_HOURMINSEC = 0x08,           
     DS3231_ALARM1_INTERR_DYHOURMINSEC     = 0x01,
     DS3231_ALARM1_INTERR_DTHOURMINSEC     = 0x00
-} ds3231_alarm1_interr_t;
+} ds3231_alarm1_match_t;
 
 typedef void *ds3231_handle_t;
 
@@ -251,15 +258,15 @@ esp_err_t ds3231_squarewave_32khz_enable(ds3231_handle_t ds3231_handle);
  */
 esp_err_t ds3231_squarewave_32khz_disable(ds3231_handle_t ds3231_handle);
 
-esp_err_t ds3231_alarm_interr_get_status(ds3231_handle_t ds3231_handle, ds3231_alarm_interr_occur_t *interr);
+esp_err_t ds3231_alarm_interr_get_status(ds3231_handle_t ds3231_handle, ds3231_alarms_t *interr);
 
 esp_err_t ds3231_alarm1_interr_enable(ds3231_handle_t ds3231_handle);
 
 esp_err_t ds3231_alarm1_interr_disable(ds3231_handle_t ds3231_handle);
 
-esp_err_t ds3231_alarm1_get_time(ds3231_handle_t ds3231_handle, ds3231_alarm1_interr_t *interr, struct tm *timeinfo, bool *is_pm);
+esp_err_t ds3231_alarm1_get_time(ds3231_handle_t ds3231_handle, ds3231_alarm1_match_t *interr, struct tm *timeinfo, bool *is_pm);
 
-esp_err_t ds3231_alarm1_set_time(ds3231_handle_t ds3231_handle, ds3231_alarm1_interr_t interr, struct tm timeinfo, bool *is_pm);
+esp_err_t ds3231_alarm1_set_time(ds3231_handle_t ds3231_handle, ds3231_alarm1_match_t interr, struct tm timeinfo, bool *is_pm);
 
 esp_err_t ds3231_alarm2_get_time(ds3231_handle_t ds3231_handle);
 
@@ -273,9 +280,9 @@ esp_err_t ds3231_alarm2_set_interr(ds3231_handle_t ds3231_handle);
 
 esp_err_t ds3231_alarm2_get_interr(ds3231_handle_t ds3231_handle);
 
-esp_err_t ds3231_alarm_get_flag(ds3231_handle_t ds3231_handle, ds3231_alarm_interr_occur_t *interr);
+esp_err_t ds3231_alarm_get_flags(ds3231_handle_t ds3231_handle, ds3231_alarm_flags_t *interr);
 
-esp_err_t ds3231_alarm_set_flag(ds3231_handle_t ds3231_handle, ds3231_alarm_interr_occur_t interr);
+esp_err_t ds3231_alarm_clear_flags(ds3231_handle_t ds3231_handle, ds3231_alarm_flags_t interr);
 
 #ifdef __cplusplus
 }

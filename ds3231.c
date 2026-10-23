@@ -445,7 +445,7 @@ esp_err_t ds3231_squarewave_32khz_disable(ds3231_handle_t ds3231_handle){
     return s_modify_reg(rtc, DS3231_ADDR_STAT, (1 << 3), 0);
 }
 
-esp_err_t ds3231_alarm_interr_get_status(ds3231_handle_t ds3231_handle, ds3231_alarm_interr_occur_t *interr){
+esp_err_t ds3231_alarm_interr_get_status(ds3231_handle_t ds3231_handle, ds3231_alarms_t *interr){
     ds3231_dev_t *rtc = (ds3231_dev_t *)ds3231_handle;
 
     ESP_RETURN_ON_ERROR(s_precond_checks(rtc), TAG, "Invalid or uninitialized device");
@@ -460,11 +460,11 @@ esp_err_t ds3231_alarm_interr_get_status(ds3231_handle_t ds3231_handle, ds3231_a
     cntrl_reg &= (DS3231_ALARM1_INTERR_BITMASK | DS3231_ALARM2_INTERR_BITMASK);
 
     switch (cntrl_reg){
-        case DS3231_ALARM_NO_INTERR:
-        case DS3231_ALARM1_INTERR:
-        case DS3231_ALARM2_INTERR:
-        case DS3231_ALARM1_ALARM2_INTERR:
-            *interr = (ds3231_alarm_interr_occur_t)cntrl_reg;
+        case DS3231_ALARM_NONE:
+        case DS3231_ALARM_A1:
+        case DS3231_ALARM_A2:
+        case DS3231_ALARM_A1_A2:
+            *interr = (ds3231_alarms_t)cntrl_reg;
             break;
         default:
             return ESP_ERR_INVALID_RESPONSE;
@@ -489,7 +489,7 @@ esp_err_t ds3231_alarm1_interr_disable(ds3231_handle_t ds3231_handle){
     return s_modify_reg(rtc, DS3231_ADDR_CNTRL, DS3231_ALARM1_INTERR_BITMASK, 0);
 }
 
-esp_err_t ds3231_alarm1_get_time(ds3231_handle_t ds3231_handle, ds3231_alarm1_interr_t *interr, struct tm *timeinfo, bool *is_pm){
+esp_err_t ds3231_alarm1_get_time(ds3231_handle_t ds3231_handle, ds3231_alarm1_match_t *interr, struct tm *timeinfo, bool *is_pm){
     esp_err_t ret = ESP_OK;
     ds3231_dev_t *rtc = (ds3231_dev_t *)ds3231_handle;
 
@@ -521,7 +521,7 @@ esp_err_t ds3231_alarm1_get_time(ds3231_handle_t ds3231_handle, ds3231_alarm1_in
         case DS3231_ALARM1_INTERR_MATCH_HOURMINSEC:
         case DS3231_ALARM1_INTERR_DYHOURMINSEC:
         case DS3231_ALARM1_INTERR_DTHOURMINSEC:
-            *interr = (ds3231_alarm1_interr_t)alarm_mask;
+            *interr = (ds3231_alarm1_match_t)alarm_mask;
             break;
         default:
             return ESP_ERR_INVALID_RESPONSE;
@@ -561,7 +561,7 @@ esp_err_t ds3231_alarm1_get_time(ds3231_handle_t ds3231_handle, ds3231_alarm1_in
         return ret;
 }
 
-esp_err_t ds3231_alarm1_set_time(ds3231_handle_t ds3231_handle, ds3231_alarm1_interr_t interr, struct tm timeinfo, bool *is_pm){
+esp_err_t ds3231_alarm1_set_time(ds3231_handle_t ds3231_handle, ds3231_alarm1_match_t interr, struct tm timeinfo, bool *is_pm){
     esp_err_t ret = ESP_OK;
     ds3231_dev_t *rtc = (ds3231_dev_t *)ds3231_handle;
 
@@ -637,7 +637,7 @@ esp_err_t ds3231_alarm2_interr_disable(ds3231_handle_t ds3231_handle){
     return s_modify_reg(rtc, DS3231_ADDR_CNTRL, DS3231_ALARM2_INTERR_BITMASK, 0);
 }
 
-esp_err_t ds3231_alarm_get_flag(ds3231_handle_t ds3231_handle, ds3231_alarm_interr_occur_t *interr){
+esp_err_t ds3231_alarm_get_flags(ds3231_handle_t ds3231_handle, ds3231_alarm_flags_t *interr){
     ds3231_dev_t *rtc = (ds3231_dev_t *)ds3231_handle;
     
     ESP_RETURN_ON_FALSE(interr != NULL, ESP_ERR_INVALID_ARG, TAG, "\"interr\" must not be NULL");
@@ -653,10 +653,10 @@ esp_err_t ds3231_alarm_get_flag(ds3231_handle_t ds3231_handle, ds3231_alarm_inte
 
     switch (status_read) {
         case DS3231_ALARM_NO_INTERR:
-        case DS3231_ALARM1_INTERR:
-        case DS3231_ALARM2_INTERR:
-        case DS3231_ALARM1_ALARM2_INTERR:
-            *interr = (ds3231_alarm_interr_occur_t)status_read;
+        case DS3231_ALARM1_FLAG_INTERR:
+        case DS3231_ALARM2_FLAG_INTERR:
+        case DS3231_ALARM1_ALARM2_FLAGS_INTERR:
+            *interr = (ds3231_alarm_flags_t)status_read;
             return ESP_OK;
 
         default:
@@ -664,12 +664,12 @@ esp_err_t ds3231_alarm_get_flag(ds3231_handle_t ds3231_handle, ds3231_alarm_inte
     }
 }
 
-esp_err_t ds3231_alarm_set_flag(ds3231_handle_t ds3231_handle, ds3231_alarm_interr_occur_t interr){
+esp_err_t ds3231_alarm_clear_flags(ds3231_handle_t ds3231_handle, ds3231_alarm_flags_t interr){
     ds3231_dev_t *rtc = (ds3231_dev_t *)ds3231_handle;
     
     ESP_RETURN_ON_ERROR(s_precond_checks(rtc), TAG, "Invalid or uninitialized device");
     ESP_RETURN_ON_FALSE(!(interr & ~DS3231_ALARM_FLAG_BITMASK), ESP_ERR_INVALID_ARG,
-                        TAG, "The interr out of range. See ds3231_alarm_interr_occur_t for the allowed values");
+                        TAG, "The interr out of range. See ds3231_alarm_flags_t for the allowed values");
                         
     return s_modify_reg(rtc, DS3231_ADDR_STAT, DS3231_ALARM_FLAG_BITMASK, ~interr & DS3231_ALARM_FLAG_BITMASK);
 }
