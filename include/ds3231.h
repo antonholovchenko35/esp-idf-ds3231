@@ -258,14 +258,65 @@ esp_err_t ds3231_squarewave_32khz_enable(ds3231_handle_t ds3231_handle);
  */
 esp_err_t ds3231_squarewave_32khz_disable(ds3231_handle_t ds3231_handle);
 
+/**
+ * @brief Get which alarm interrupts are enabled
+ * 
+ * @note 
+ * 
+ * @param[in] ds3231_handle Device handle
+ * @param[out] interr Get the enabled alarm interrupt
+ * 
+ * @return ESP_OK on success
+ */
 esp_err_t ds3231_alarm_interr_get_status(ds3231_handle_t ds3231_handle, ds3231_alarms_t *interr);
 
+/**
+ * @brief Enable interrupts for alarm 1
+ * 
+ * @note You must turn off the square wave output with ds3231_squarewave_disable() 
+ *       before using alarm interrupts
+ * 
+ * @param[in] ds3231_handle Device handle
+ * 
+ * @return ESP_OK on success
+ */
 esp_err_t ds3231_alarm1_interr_enable(ds3231_handle_t ds3231_handle);
 
+/**
+ * @brief Disable interrupts for alarm 1
+ * 
+ * @param[in] ds3231_handle Device handle
+ * 
+ * @return ESP_OK on success
+ */
 esp_err_t ds3231_alarm1_interr_disable(ds3231_handle_t ds3231_handle);
 
+/**
+ * @brief Read alarm 1 config (match mode and alarm time)
+ * 
+ * @note Only fields relevant to the returned match mode are valid
+ * 
+ * @param[in] ds3231_handle Device handle
+ * @param[out] interr Alarm match mode
+ * @param[out] timeinfo the tm structure for time
+ * @param[out] is_pm true if PM, false if AM. Not filled if 24-hour format used
+ * 
+ * @return ESP_OK on success
+ */
 esp_err_t ds3231_alarm1_get_time(ds3231_handle_t ds3231_handle, ds3231_alarm1_match_t *interr, struct tm *timeinfo, bool *is_pm);
 
+/**
+ * @brief Set the time of interrupt
+ * 
+ * @note In the structure tm you can fill the necessarry values only
+ * 
+ * @param[in] ds3231_handle Device handle
+ * @param[in] interr Necessary interrupt matches
+ * @param[in] timeinfo the tm structure for time
+ * @param[in] is_pm true if PM, false if AM. NULL if 24-hour format used
+ * 
+ * @return ESP_OK on success
+ */
 esp_err_t ds3231_alarm1_set_time(ds3231_handle_t ds3231_handle, ds3231_alarm1_match_t interr, struct tm timeinfo, bool *is_pm);
 
 esp_err_t ds3231_alarm2_get_time(ds3231_handle_t ds3231_handle);
@@ -280,8 +331,24 @@ esp_err_t ds3231_alarm2_set_interr(ds3231_handle_t ds3231_handle);
 
 esp_err_t ds3231_alarm2_get_interr(ds3231_handle_t ds3231_handle);
 
+/**
+ * @brief Get the flags of which alarm was triggered
+ * 
+ * @param[in] ds3231_handle Device handle
+ * @param[out] interr Flag of the occurred interrupt
+ * 
+ * @return ESP_OK on success
+ */
 esp_err_t ds3231_alarm_get_flags(ds3231_handle_t ds3231_handle, ds3231_alarm_flags_t *interr);
 
+/**
+ * @brief Clear interrupt flags
+ * 
+ * @param[in] ds3231_handle Device handle
+ * @param[in] interr Flags to clear
+ * 
+ * @return ESP_OK on success
+ */
 esp_err_t ds3231_alarm_clear_flags(ds3231_handle_t ds3231_handle, ds3231_alarm_flags_t interr);
 
 #ifdef __cplusplus
