@@ -692,7 +692,60 @@ esp_err_t ds3231_alarm2_get_time(ds3231_handle_t ds3231_handle, ds3231_alarm2_ma
         return ret;
 }
 
-esp_err_t ds3231_alarm2_set_time(ds3231_handle_t ds3231_handle, ds3231_alarm2_match_t interr, struct tm timeinfo, bool *is_pm);
+esp_err_t ds3231_alarm2_set_time(ds3231_handle_t ds3231_handle, ds3231_alarm2_match_t interr, struct tm timeinfo, bool *is_pm){
+    esp_err_t ret = ESP_OK;
+    ds3231_dev_t *rtc = (ds3231_dev_t *)ds3231_handle;
+
+    ESP_GOTO_ON_ERROR(s_precond_checks(rtc), err, TAG, "Invalid or uninitialized device");
+    ESP_GOTO_ON_FALSE((is_pm == NULL && timeinfo.tm_hour >= 0 && timeinfo.tm_hour <= 23)
+                      || (is_pm != NULL && timeinfo.tm_hour >= 1 && timeinfo.tm_hour <= 12),
+                      ESP_ERR_INVALID_ARG, err, TAG, "tm_hour is out of range for the selected time format");
+
+    uint8_t data[4] = {0};
+
+    data[0] = DS3231_ADDR_ALARM2_MIN;
+    data[1] = s_convert_to_bcd(timeinfo.tm_min);
+
+    if (is_pm == NULL)
+        data[2] = s_convert_to_bcd(timeinfo.tm_hour);
+    else if (*is_pm == true)
+        data[2] = s_convert_to_bcd(timeinfo.tm_hour) | (1 << 5) | (1 << 6);
+    else
+        data[2] = s_convert_to_bcd(timeinfo.tm_hour) | (1 << 6);
+
+    switch (interr) {
+        case DS3231_ALARM2_INTERR_PER_MIN:
+            for (size_t i = 3; i >= 1; --i)
+                data[i] |= (1 << 7);
+            break;
+        case DS3231_ALARM2_INTERR_MATCH_MIN:
+            for (size_t i = 3; i >= 2; --i)
+                data[i] |= (1 << 7);
+            break;
+        case DS3231_ALARM2_INTERR_MATCH_HOURMIN:
+            data[3] |= (1 << 7);
+            break;
+        case DS3231_ALARM2_INTERR_HOURMINDAY:
+            data[3] = s_convert_to_bcd(timeinfo.tm_wday + 1);
+            data[3] |= (1 << 6);
+            break;
+        case DS3231_ALARM2_INTERR_MATCH_HOURMINDATE:
+            data[3] = s_convert_to_bcd(timeinfo.tm_mday);
+            data[3] &= ~(1 << 6);
+            break;
+        default:
+            ESP_LOGE(TAG, "Invalid interr arg");
+            return ESP_ERR_INVALID_ARG;
+    }
+
+    ESP_GOTO_ON_ERROR(i2c_master_transmit(rtc->i2c_handle, data, 4, DS3231_TIMEOUT_MS), err,
+                      TAG, "Failed to write alarm2 registers");
+
+    return ret;
+
+    err:
+        return ret;
+}
 
 esp_err_t ds3231_alarm2_interr_enable(ds3231_handle_t ds3231_handle){
     ds3231_dev_t *rtc = (ds3231_dev_t *)ds3231_handle;

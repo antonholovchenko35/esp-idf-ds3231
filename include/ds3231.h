@@ -359,10 +359,6 @@ esp_err_t ds3231_alarm2_interr_enable(ds3231_handle_t ds3231_handle);
 
 esp_err_t ds3231_alarm2_interr_disable(ds3231_handle_t ds3231_handle);
 
-esp_err_t ds3231_alarm2_set_interr(ds3231_handle_t ds3231_handle);
-
-esp_err_t ds3231_alarm2_get_interr(ds3231_handle_t ds3231_handle);
-
 /**
  * @brief Get the flags of which alarm was triggered
  * 
