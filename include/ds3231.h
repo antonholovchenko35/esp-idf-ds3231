@@ -47,9 +47,17 @@ typedef enum {
     DS3231_ALARM1_INTERR_MATCH_SEC        = 0x0E,   
     DS3231_ALARM1_INTERR_MATCH_MINSEC     = 0x0C,       
     DS3231_ALARM1_INTERR_MATCH_HOURMINSEC = 0x08,           
-    DS3231_ALARM1_INTERR_DYHOURMINSEC     = 0x01,
-    DS3231_ALARM1_INTERR_DTHOURMINSEC     = 0x00
+    DS3231_ALARM1_INTERR_HOURMINSECDAY    = 0x01,
+    DS3231_ALARM1_INTERR_HOURMINSECDATE   = 0x00
 } ds3231_alarm1_match_t;
+
+typedef enum {
+    DS3231_ALARM2_INTERR_PER_MIN           = 0x07,   
+    DS3231_ALARM2_INTERR_MATCH_MIN         = 0x06,   
+    DS3231_ALARM2_INTERR_MATCH_HOURMIN     = 0x04,       
+    DS3231_ALARM2_INTERR_MATCH_HOURMINDATE = 0x00,           
+    DS3231_ALARM2_INTERR_HOURMINDAY        = 0x10
+} ds3231_alarm2_match_t;
 
 typedef void *ds3231_handle_t;
 
@@ -319,9 +327,33 @@ esp_err_t ds3231_alarm1_get_time(ds3231_handle_t ds3231_handle, ds3231_alarm1_ma
  */
 esp_err_t ds3231_alarm1_set_time(ds3231_handle_t ds3231_handle, ds3231_alarm1_match_t interr, struct tm timeinfo, bool *is_pm);
 
-esp_err_t ds3231_alarm2_get_time(ds3231_handle_t ds3231_handle);
+/**
+ * @brief Read alarm 2 config (match mode and alarm time)
+ * 
+ * @note Only fields relevant to the returned match mode are valid
+ * 
+ * @param[in] ds3231_handle Device handle
+ * @param[out] interr Alarm match mode
+ * @param[out] timeinfo the tm structure for time
+ * @param[out] is_pm true if PM, false if AM. Not filled if 24-hour format used
+ * 
+ * @return ESP_OK on success
+ */
+esp_err_t ds3231_alarm2_get_time(ds3231_handle_t ds3231_handle, ds3231_alarm2_match_t *interr, struct tm *timeinfo, bool *is_pm);
 
-esp_err_t ds3231_alarm2_set_time(ds3231_handle_t ds3231_handle);
+/**
+ * @brief Set the time of interrupt
+ * 
+ * @note In the structure tm you can fill the necessarry values only
+ * 
+ * @param[in] ds3231_handle Device handle
+ * @param[in] interr Necessary interrupt matches
+ * @param[in] timeinfo the tm structure for time
+ * @param[in] is_pm true if PM, false if AM. NULL if 24-hour format used
+ * 
+ * @return ESP_OK on success
+ */
+esp_err_t ds3231_alarm2_set_time(ds3231_handle_t ds3231_handle, ds3231_alarm2_match_t interr, struct tm timeinfo, bool *is_pm);
 
 esp_err_t ds3231_alarm2_interr_enable(ds3231_handle_t ds3231_handle);
 

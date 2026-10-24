@@ -34,6 +34,7 @@
 #define DS3231_ALARM1_DY_DT_BITMASK     0x40
 #define DS3231_ALARM1_MASKBITS_BITMASK  0x80
 #define DS3231_ALARM1_INTERR_BITMASK    0x01
+#define DS3231_ALARM2_DY_DT_BITMASK     0x40
 #define DS3231_ALARM2_INTERR_BITMASK    0x02
 #define DS3231_ALARM_FLAG_BITMASK       0x03
 
@@ -519,8 +520,8 @@ esp_err_t ds3231_alarm1_get_time(ds3231_handle_t ds3231_handle, ds3231_alarm1_ma
         case DS3231_ALARM1_INTERR_MATCH_SEC:
         case DS3231_ALARM1_INTERR_MATCH_MINSEC:
         case DS3231_ALARM1_INTERR_MATCH_HOURMINSEC:
-        case DS3231_ALARM1_INTERR_DYHOURMINSEC:
-        case DS3231_ALARM1_INTERR_DTHOURMINSEC:
+        case DS3231_ALARM1_INTERR_HOURMINSECDAY:
+        case DS3231_ALARM1_INTERR_HOURMINSECDATE:
             *interr = (ds3231_alarm1_match_t)alarm_mask;
             break;
         default:
@@ -599,11 +600,11 @@ esp_err_t ds3231_alarm1_set_time(ds3231_handle_t ds3231_handle, ds3231_alarm1_ma
         case DS3231_ALARM1_INTERR_MATCH_HOURMINSEC:
             data[4] |= (1 << 7);
             break;
-        case DS3231_ALARM1_INTERR_DYHOURMINSEC:
+        case DS3231_ALARM1_INTERR_HOURMINSECDAY:
             data[4] = s_convert_to_bcd(timeinfo.tm_wday + 1);
             data[4] |= (1 << 6);
             break;
-        case DS3231_ALARM1_INTERR_DTHOURMINSEC:
+        case DS3231_ALARM1_INTERR_HOURMINSECDATE:
             data[4] = s_convert_to_bcd(timeinfo.tm_mday);
             data[4] &= ~(1 << 6);
             break;
@@ -620,6 +621,78 @@ esp_err_t ds3231_alarm1_set_time(ds3231_handle_t ds3231_handle, ds3231_alarm1_ma
     err:
         return ret;
 }
+
+esp_err_t ds3231_alarm2_get_time(ds3231_handle_t ds3231_handle, ds3231_alarm2_match_t *interr, struct tm *timeinfo, bool *is_pm){
+    esp_err_t ret = ESP_OK;
+    ds3231_dev_t *rtc = (ds3231_dev_t *)ds3231_handle;
+
+    ESP_GOTO_ON_ERROR(s_precond_checks(rtc), err, TAG, "Invalid or uninitialized device");
+    ESP_GOTO_ON_FALSE(timeinfo != NULL, ESP_ERR_INVALID_ARG, err,
+                      TAG, "\"timeinfo\" must not be NULL");
+
+    uint8_t data_buf_write = DS3231_ADDR_ALARM2_MIN;
+    uint8_t data_buf_read[3];
+
+    ESP_GOTO_ON_ERROR(i2c_master_transmit_receive(rtc->i2c_handle, &data_buf_write, 1, data_buf_read, 3, DS3231_TIMEOUT_MS), err,
+                      TAG, "Failed to read alarm2 registers for time");
+
+
+    uint8_t alarm_mask = 0;
+
+    for (size_t i = 0; i < 3; ++i){
+        alarm_mask |= ((data_buf_read[i] & DS3231_ALARM1_MASKBITS_BITMASK) >> (7 - i));
+        data_buf_read[i] &= ~DS3231_ALARM1_MASKBITS_BITMASK;
+    }
+
+    if (!alarm_mask)
+        alarm_mask |= ((data_buf_read[2] & (1 << 6)) >> 2);
+
+    switch (alarm_mask){
+        case DS3231_ALARM2_INTERR_PER_MIN:
+        case DS3231_ALARM2_INTERR_MATCH_MIN:
+        case DS3231_ALARM2_INTERR_MATCH_HOURMIN:
+        case DS3231_ALARM2_INTERR_MATCH_HOURMINDATE:
+        case DS3231_ALARM2_INTERR_HOURMINDAY:
+            *interr = (ds3231_alarm2_match_t)alarm_mask;
+            break;
+        default:
+            return ESP_ERR_INVALID_RESPONSE;
+    }
+    // check the format of time
+    if (data_buf_read[1] & (1 << 6)){
+        ESP_GOTO_ON_FALSE(is_pm != NULL, ESP_ERR_INVALID_ARG, err, TAG, "is_pm must be not NULL in 12-hour mode");
+
+        data_buf_read[1] &= ~(1 << 6);
+        
+        if (data_buf_read[1] & (1 << 5))
+            *is_pm = true;
+        else
+            *is_pm = false;
+
+        data_buf_read[1] &= ~(1 << 5);
+    }
+
+    s_convert_from_bcd(data_buf_read, sizeof(data_buf_read) - 1);
+
+    timeinfo->tm_min = data_buf_read[0];
+    timeinfo->tm_hour = data_buf_read[1];
+
+    if (data_buf_read[2] & DS3231_ALARM2_DY_DT_BITMASK){
+        data_buf_read[2] &= ~DS3231_ALARM2_DY_DT_BITMASK;
+        s_convert_from_bcd(&(data_buf_read[2]), 1);
+        timeinfo->tm_wday = data_buf_read[2] - 1;
+    }else{
+        s_convert_from_bcd(&(data_buf_read[2]), 1);
+        timeinfo->tm_mday = data_buf_read[2];
+    }
+
+    return ret;
+
+    err:
+        return ret;
+}
+
+esp_err_t ds3231_alarm2_set_time(ds3231_handle_t ds3231_handle, ds3231_alarm2_match_t interr, struct tm timeinfo, bool *is_pm);
 
 esp_err_t ds3231_alarm2_interr_enable(ds3231_handle_t ds3231_handle){
     ds3231_dev_t *rtc = (ds3231_dev_t *)ds3231_handle;
