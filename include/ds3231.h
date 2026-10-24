@@ -355,8 +355,25 @@ esp_err_t ds3231_alarm2_get_time(ds3231_handle_t ds3231_handle, ds3231_alarm2_ma
  */
 esp_err_t ds3231_alarm2_set_time(ds3231_handle_t ds3231_handle, ds3231_alarm2_match_t interr, struct tm timeinfo, bool *is_pm);
 
+/**
+ * @brief Enable interrupts for alarm 2
+ * 
+ * @note You must turn off the square wave output with ds3231_squarewave_disable() 
+ *       before using alarm interrupts
+ * 
+ * @param[in] ds3231_handle Device handle
+ * 
+ * @return ESP_OK on success
+ */
 esp_err_t ds3231_alarm2_interr_enable(ds3231_handle_t ds3231_handle);
 
+/**
+ * @brief Disable interrupts for alarm 2
+ * 
+ * @param[in] ds3231_handle Device handle
+ * 
+ * @return ESP_OK on success
+ */
 esp_err_t ds3231_alarm2_interr_disable(ds3231_handle_t ds3231_handle);
 
 /**
