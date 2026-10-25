@@ -227,6 +227,16 @@ esp_err_t ds3231_set_time(ds3231_handle_t ds3231_handle, struct tm timeinfo, boo
     ESP_GOTO_ON_FALSE((is_pm == NULL && timeinfo.tm_hour >= 0 && timeinfo.tm_hour <= 23)
                       || (is_pm != NULL && timeinfo.tm_hour >= 1 && timeinfo.tm_hour <= 12),
                       ESP_ERR_INVALID_ARG, err, TAG, "tm_hour is out of range for the selected time format");
+    ESP_GOTO_ON_FALSE(timeinfo.tm_sec >= 0 && timeinfo.tm_sec <= 59, ESP_ERR_INVALID_ARG, err,
+                      TAG, "tm_sec is out of range (0-59)");
+    ESP_GOTO_ON_FALSE(timeinfo.tm_min >= 0 && timeinfo.tm_min <= 59, ESP_ERR_INVALID_ARG, err,
+                      TAG, "tm_min is out of range (0-59)");
+    ESP_GOTO_ON_FALSE(timeinfo.tm_wday >= 0 && timeinfo.tm_wday <= 6, ESP_ERR_INVALID_ARG, err,
+                      TAG, "tm_wday is out of range (0-6)");
+    ESP_GOTO_ON_FALSE(timeinfo.tm_mday >= 1 && timeinfo.tm_mday <= 31, ESP_ERR_INVALID_ARG, err,
+                      TAG, "tm_mday is out of range (1-31)");
+    ESP_GOTO_ON_FALSE(timeinfo.tm_mon >= 0 && timeinfo.tm_mon <= 11, ESP_ERR_INVALID_ARG, err,
+                      TAG, "tm_mon is out of range (0-11)");
 
     uint8_t data[8];
 
