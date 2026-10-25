@@ -93,6 +93,9 @@ static esp_err_t s_modify_reg(ds3231_dev_t *rtc, uint8_t reg_addr, uint8_t mask,
 esp_err_t ds3231_create(i2c_master_bus_handle_t i2c_bus, ds3231_handle_t *ds3231_handle){
     esp_err_t ret = ESP_OK;
 
+    ESP_RETURN_ON_FALSE(i2c_bus != NULL, ESP_ERR_INVALID_ARG, TAG, "\"i2c_bus\" must not be NULL");
+    ESP_RETURN_ON_FALSE(ds3231_handle != NULL, ESP_ERR_INVALID_ARG, TAG, "\"ds3231_handle\" must not be NULL");
+
     ds3231_dev_t *rtc = (ds3231_dev_t *) calloc(1, sizeof(ds3231_dev_t));
     ESP_RETURN_ON_FALSE(rtc != NULL, ESP_ERR_NO_MEM, TAG, "Failed to allocate device descriptor");
 
@@ -133,6 +136,8 @@ esp_err_t ds3231_get_time_valid(ds3231_handle_t ds3231_handle, bool *time_valid)
     ds3231_dev_t *rtc = (ds3231_dev_t *)ds3231_handle;
 
     ESP_GOTO_ON_ERROR(s_precond_checks(rtc), err, TAG, "Invalid or uninitialized device");
+    ESP_GOTO_ON_FALSE(time_valid != NULL, ESP_ERR_INVALID_ARG, err,
+                      TAG, "\"time_valid\" must not be NULL");
 
     uint8_t status_buf_write = DS3231_ADDR_STAT;
     uint8_t status_buf_read;
@@ -376,6 +381,7 @@ esp_err_t ds3231_squarewave_get_freq(ds3231_handle_t ds3231_handle, ds3231_squar
     ds3231_dev_t *rtc = (ds3231_dev_t *)ds3231_handle;
     
     ESP_RETURN_ON_ERROR(s_precond_checks(rtc), TAG, "Invalid or uninitialized device");
+    ESP_RETURN_ON_FALSE(freq != NULL, ESP_ERR_INVALID_ARG, TAG, "\"freq\" must not be NULL");
 
     uint8_t cntrl_addr = DS3231_ADDR_CNTRL;
     uint8_t cntrl_read;
@@ -497,6 +503,8 @@ esp_err_t ds3231_alarm1_get_time(ds3231_handle_t ds3231_handle, ds3231_alarm1_ma
     ESP_GOTO_ON_ERROR(s_precond_checks(rtc), err, TAG, "Invalid or uninitialized device");
     ESP_GOTO_ON_FALSE(timeinfo != NULL, ESP_ERR_INVALID_ARG, err,
                       TAG, "\"timeinfo\" must not be NULL");
+    ESP_GOTO_ON_FALSE(interr != NULL, ESP_ERR_INVALID_ARG, err,
+                      TAG, "\"interr\" must not be NULL");
 
     uint8_t data_buf_write = DS3231_ADDR_ALARM1_SEC;
     uint8_t data_buf_read[4];
@@ -629,6 +637,8 @@ esp_err_t ds3231_alarm2_get_time(ds3231_handle_t ds3231_handle, ds3231_alarm2_ma
     ESP_GOTO_ON_ERROR(s_precond_checks(rtc), err, TAG, "Invalid or uninitialized device");
     ESP_GOTO_ON_FALSE(timeinfo != NULL, ESP_ERR_INVALID_ARG, err,
                       TAG, "\"timeinfo\" must not be NULL");
+    ESP_GOTO_ON_FALSE(interr != NULL, ESP_ERR_INVALID_ARG, err,
+                      TAG, "\"interr\" must not be NULL");
 
     uint8_t data_buf_write = DS3231_ADDR_ALARM2_MIN;
     uint8_t data_buf_read[3];
