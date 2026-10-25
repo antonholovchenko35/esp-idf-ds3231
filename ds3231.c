@@ -244,7 +244,7 @@ esp_err_t ds3231_set_time(ds3231_handle_t ds3231_handle, struct tm timeinfo, boo
     ESP_GOTO_ON_ERROR(i2c_master_transmit(rtc->i2c_handle, data, 8, DS3231_TIMEOUT_MS), err,
                       TAG, "Failed to write time registers");
 
-    ret = s_modify_reg(rtc, DS3231_ADDR_STAT, DS3231_OSF_BITMASK, 0);
+    ret = s_modify_reg(rtc, DS3231_ADDR_STAT, DS3231_OSF_BITMASK | DS3231_ALARM_FLAG_BITMASK, DS3231_ALARM_FLAG_BITMASK);
 
     return ret;
 
@@ -435,7 +435,7 @@ esp_err_t ds3231_squarewave_32khz_enable(ds3231_handle_t ds3231_handle){
 
     ESP_RETURN_ON_ERROR(s_precond_checks(rtc), TAG, "Invalid or uninitialized device");
     
-    return s_modify_reg(rtc, DS3231_ADDR_STAT, (1 << 3), (1 << 3)); 
+    return s_modify_reg(rtc, DS3231_ADDR_STAT, (1 << 3) | DS3231_ALARM_FLAG_BITMASK, (1 << 3) | DS3231_ALARM_FLAG_BITMASK); 
 }
 
 esp_err_t ds3231_squarewave_32khz_disable(ds3231_handle_t ds3231_handle){
@@ -443,7 +443,7 @@ esp_err_t ds3231_squarewave_32khz_disable(ds3231_handle_t ds3231_handle){
 
     ESP_RETURN_ON_ERROR(s_precond_checks(rtc), TAG, "Invalid or uninitialized device");
 
-    return s_modify_reg(rtc, DS3231_ADDR_STAT, (1 << 3), 0);
+    return s_modify_reg(rtc, DS3231_ADDR_STAT, (1 << 3) | DS3231_ALARM_FLAG_BITMASK, DS3231_ALARM_FLAG_BITMASK);
 }
 
 esp_err_t ds3231_alarm_interr_get_status(ds3231_handle_t ds3231_handle, ds3231_alarms_t *interr){
