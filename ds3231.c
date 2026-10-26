@@ -90,6 +90,35 @@ static esp_err_t s_modify_reg(ds3231_dev_t *rtc, uint8_t reg_addr, uint8_t mask,
     return ESP_OK;
 }
 
+static uint8_t s_hour_to_reg(uint8_t hour, bool mode_12h){
+    if (!mode_12h)
+        return s_convert_to_bcd(hour);
+
+    uint8_t reg = (1 << 6);
+    if (hour >= 12)
+        reg |= (1 << 5);
+
+    uint8_t hour_12 = hour % 12;
+    if (hour_12 == 0)
+        hour_12 = 12;
+
+    return reg | s_convert_to_bcd(hour_12);
+}
+
+static uint8_t s_reg_to_hour(uint8_t reg){
+    if (!(reg & (1 << 6))){
+        reg &= 0x3F;
+        s_convert_from_bcd(&reg, 1);
+        return reg;
+    }
+
+    bool pm = reg & (1 << 5);
+    reg &= 0x1F;
+    s_convert_from_bcd(&reg, 1);
+
+    return (reg % 12) + (pm ? 12 : 0); // 12 am -> 0, 12 pm -> 12 etc.
+}
+
 esp_err_t ds3231_create(i2c_master_bus_handle_t i2c_bus, ds3231_handle_t *ds3231_handle){
     esp_err_t ret = ESP_OK;
 
