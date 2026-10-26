@@ -34,32 +34,29 @@ void app_main(void){
     ESP_ERROR_CHECK(ds3231_get_time_format(rtc, &timeformat));
 
     if (!time_valid || timeformat != DS3231_TIME_FORMAT_12H){
-        // 2026-01-01 11:58:00 PM, Thursday
+        // 2026-01-01 23:58:00, Thursday
         struct tm timeinfo = {
             .tm_year = 2026 - 1900,
             .tm_mon = 0,
             .tm_mday = 1,
-            .tm_hour = 11,
+            .tm_hour = 23,
             .tm_min = 58,
             .tm_sec = 0,
             .tm_wday = 4
         };
-        bool is_pm = true;
 
-        ESP_ERROR_CHECK(ds3231_set_time(rtc, timeinfo, &is_pm));
+        ESP_ERROR_CHECK(ds3231_set_time(rtc, timeinfo, DS3231_TIME_FORMAT_12H));
         ESP_LOGI(TAG, "Time was invalid, set to default");
     }
 
     struct tm timeinfo = {0};
-    bool is_pm;
 
     while (1){
-        ESP_ERROR_CHECK(ds3231_get_time(rtc, &timeinfo, &is_pm));
+        ESP_ERROR_CHECK(ds3231_get_time(rtc, &timeinfo, NULL));
 
-        ESP_LOGI(TAG, "%04d-%02d-%02d %02d:%02d:%02d %s",
+        ESP_LOGI(TAG, "%04d-%02d-%02d %02d:%02d:%02d",
                  timeinfo.tm_year + 1900, timeinfo.tm_mon + 1, timeinfo.tm_mday,
-                 timeinfo.tm_hour, timeinfo.tm_min, timeinfo.tm_sec,
-                 is_pm ? "PM" : "AM");
+                 timeinfo.tm_hour, timeinfo.tm_min, timeinfo.tm_sec);
 
         vTaskDelay(pdMS_TO_TICKS(1000));
     }

@@ -45,7 +45,7 @@ void app_main(void){
             .tm_wday = 4
         };
 
-        ESP_ERROR_CHECK(ds3231_set_time(rtc, timeinfo, NULL));
+        ESP_ERROR_CHECK(ds3231_set_time(rtc, timeinfo, DS3231_TIME_FORMAT_24H));
         ESP_LOGI(TAG, "Time was invalid, set to default");
     }
 
