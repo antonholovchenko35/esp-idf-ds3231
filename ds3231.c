@@ -248,14 +248,15 @@ esp_err_t ds3231_get_time_format(ds3231_handle_t ds3231_handle, ds3231_time_form
         return ret;
 }
 
-esp_err_t ds3231_set_time(ds3231_handle_t ds3231_handle, struct tm timeinfo, bool *is_pm){
+esp_err_t ds3231_set_time(ds3231_handle_t ds3231_handle, struct tm timeinfo, ds3231_time_format_t format){
     esp_err_t ret = ESP_OK;
     ds3231_dev_t *rtc = (ds3231_dev_t *)ds3231_handle;
 
     ESP_GOTO_ON_ERROR(s_precond_checks(rtc), err, TAG, "Invalid or uninitialized device");
-    ESP_GOTO_ON_FALSE((is_pm == NULL && timeinfo.tm_hour >= 0 && timeinfo.tm_hour <= 23)
-                      || (is_pm != NULL && timeinfo.tm_hour >= 1 && timeinfo.tm_hour <= 12),
-                      ESP_ERR_INVALID_ARG, err, TAG, "tm_hour is out of range for the selected time format");
+    ESP_GOTO_ON_FALSE(format == DS3231_TIME_FORMAT_12H || format == DS3231_TIME_FORMAT_24H, ESP_ERR_INVALID_ARG, err,
+                      TAG, "Invalid time format");
+    ESP_GOTO_ON_FALSE(timeinfo.tm_hour >= 0 && timeinfo.tm_hour <= 23, ESP_ERR_INVALID_ARG, err,
+                      TAG, "tm_hour is out of range (0-23)");
     ESP_GOTO_ON_FALSE(timeinfo.tm_sec >= 0 && timeinfo.tm_sec <= 59, ESP_ERR_INVALID_ARG, err,
                       TAG, "tm_sec is out of range (0-59)");
     ESP_GOTO_ON_FALSE(timeinfo.tm_min >= 0 && timeinfo.tm_min <= 59, ESP_ERR_INVALID_ARG, err,
@@ -272,13 +273,10 @@ esp_err_t ds3231_set_time(ds3231_handle_t ds3231_handle, struct tm timeinfo, boo
     data[0] = DS3231_ADDR_SEC;
     data[1] = s_convert_to_bcd(timeinfo.tm_sec);
     data[2] = s_convert_to_bcd(timeinfo.tm_min);
-
-    if (is_pm == NULL)
-        data[3] = s_convert_to_bcd(timeinfo.tm_hour);
-    else if (*is_pm == true)
-        data[3] = s_convert_to_bcd(timeinfo.tm_hour) | (1 << 5) | (1 << 6);
+    if (format == DS3231_TIME_FORMAT_12H)
+        data[3] = s_hour_to_reg(timeinfo.tm_hour, true);
     else
-        data[3] = s_convert_to_bcd(timeinfo.tm_hour) | (1 << 6);
+        data[3] = s_hour_to_reg(timeinfo.tm_hour, false);
 
     data[4] = s_convert_to_bcd(timeinfo.tm_wday + 1);
     data[5] = s_convert_to_bcd(timeinfo.tm_mday);
@@ -296,7 +294,7 @@ esp_err_t ds3231_set_time(ds3231_handle_t ds3231_handle, struct tm timeinfo, boo
         return ret;
 }
 
-esp_err_t ds3231_get_time(ds3231_handle_t ds3231_handle, struct tm *timeinfo, bool *is_pm){
+esp_err_t ds3231_get_time(ds3231_handle_t ds3231_handle, struct tm *timeinfo, ds3231_time_format_t *format){
     esp_err_t ret = ESP_OK;
     ds3231_dev_t *rtc = (ds3231_dev_t *)ds3231_handle;
 
@@ -311,26 +309,16 @@ esp_err_t ds3231_get_time(ds3231_handle_t ds3231_handle, struct tm *timeinfo, bo
                       TAG, "Failed to read time registers");
 
 
-    // check the format of time
-    if (data_buf_read[2] & (1 << 6)){
-        ESP_GOTO_ON_FALSE(is_pm != NULL, ESP_ERR_INVALID_ARG, err, TAG, "is_pm must be not NULL in 12-hour mode");
-
-        data_buf_read[2] &= ~(1 << 6);
-        
-        if (data_buf_read[2] & (1 << 5))
-            *is_pm = true;
-        else
-            *is_pm = false;
-
-        data_buf_read[2] &= ~(1 << 5);
-    }
+    uint8_t hour_reg = data_buf_read[2];
+    if (format != NULL)
+        *format = (hour_reg & (1 << 6)) ? DS3231_TIME_FORMAT_12H : DS3231_TIME_FORMAT_24H;
 
     data_buf_read[5] &= ~(1 << 7); // turn off century bit
     s_convert_from_bcd(data_buf_read, sizeof(data_buf_read));
 
     timeinfo->tm_sec = data_buf_read[0];
     timeinfo->tm_min = data_buf_read[1];
-    timeinfo->tm_hour = data_buf_read[2];
+    timeinfo->tm_hour = s_reg_to_hour(hour_reg);
     timeinfo->tm_wday = data_buf_read[3] - 1;
     timeinfo->tm_mday = data_buf_read[4];
     timeinfo->tm_mon = data_buf_read[5] - 1;
@@ -535,7 +523,7 @@ esp_err_t ds3231_alarm1_interr_disable(ds3231_handle_t ds3231_handle){
     return s_modify_reg(rtc, DS3231_ADDR_CNTRL, DS3231_ALARM1_INTERR_BITMASK, 0);
 }
 
-esp_err_t ds3231_alarm1_get_time(ds3231_handle_t ds3231_handle, ds3231_alarm1_match_t *interr, struct tm *timeinfo, bool *is_pm){
+esp_err_t ds3231_alarm1_get_time(ds3231_handle_t ds3231_handle, ds3231_alarm1_match_t *interr, struct tm *timeinfo, ds3231_time_format_t *format){
     esp_err_t ret = ESP_OK;
     ds3231_dev_t *rtc = (ds3231_dev_t *)ds3231_handle;
 
@@ -574,25 +562,15 @@ esp_err_t ds3231_alarm1_get_time(ds3231_handle_t ds3231_handle, ds3231_alarm1_ma
         default:
             return ESP_ERR_INVALID_RESPONSE;
     }
-    // check the format of time
-    if (data_buf_read[2] & (1 << 6)){
-        ESP_GOTO_ON_FALSE(is_pm != NULL, ESP_ERR_INVALID_ARG, err, TAG, "is_pm must be not NULL in 12-hour mode");
 
-        data_buf_read[2] &= ~(1 << 6);
-        
-        if (data_buf_read[2] & (1 << 5))
-            *is_pm = true;
-        else
-            *is_pm = false;
+    if (format != NULL)
+        *format = (data_buf_read[2] & (1 << 6)) ? DS3231_TIME_FORMAT_12H : DS3231_TIME_FORMAT_24H;
 
-        data_buf_read[2] &= ~(1 << 5);
-    }
-
-    s_convert_from_bcd(data_buf_read, sizeof(data_buf_read) - 1);
+    s_convert_from_bcd(data_buf_read, 2);
 
     timeinfo->tm_sec = data_buf_read[0];
     timeinfo->tm_min = data_buf_read[1];
-    timeinfo->tm_hour = data_buf_read[2];
+    timeinfo->tm_hour = s_reg_to_hour(data_buf_read[2]);
 
     if (data_buf_read[3] & DS3231_ALARM1_DY_DT_BITMASK){
         data_buf_read[3] &= ~DS3231_ALARM1_DY_DT_BITMASK;
@@ -609,14 +587,15 @@ esp_err_t ds3231_alarm1_get_time(ds3231_handle_t ds3231_handle, ds3231_alarm1_ma
         return ret;
 }
 
-esp_err_t ds3231_alarm1_set_time(ds3231_handle_t ds3231_handle, ds3231_alarm1_match_t interr, struct tm timeinfo, bool *is_pm){
+esp_err_t ds3231_alarm1_set_time(ds3231_handle_t ds3231_handle, ds3231_alarm1_match_t interr, struct tm timeinfo, ds3231_time_format_t format){
     esp_err_t ret = ESP_OK;
     ds3231_dev_t *rtc = (ds3231_dev_t *)ds3231_handle;
 
     ESP_GOTO_ON_ERROR(s_precond_checks(rtc), err, TAG, "Invalid or uninitialized device");
-    ESP_GOTO_ON_FALSE((is_pm == NULL && timeinfo.tm_hour >= 0 && timeinfo.tm_hour <= 23)
-                      || (is_pm != NULL && timeinfo.tm_hour >= 1 && timeinfo.tm_hour <= 12),
-                      ESP_ERR_INVALID_ARG, err, TAG, "tm_hour is out of range for the selected time format");
+    ESP_GOTO_ON_FALSE(format == DS3231_TIME_FORMAT_12H || format == DS3231_TIME_FORMAT_24H, ESP_ERR_INVALID_ARG, err,
+                      TAG, "Invalid time format");
+    ESP_GOTO_ON_FALSE(timeinfo.tm_hour >= 0 && timeinfo.tm_hour <= 23, ESP_ERR_INVALID_ARG, err,
+                      TAG, "tm_hour is out of range (0-23)");
 
     uint8_t data[5] = {0};
 
@@ -624,12 +603,10 @@ esp_err_t ds3231_alarm1_set_time(ds3231_handle_t ds3231_handle, ds3231_alarm1_ma
     data[1] = s_convert_to_bcd(timeinfo.tm_sec);
     data[2] = s_convert_to_bcd(timeinfo.tm_min);
 
-    if (is_pm == NULL)
-        data[3] = s_convert_to_bcd(timeinfo.tm_hour);
-    else if (*is_pm == true)
-        data[3] = s_convert_to_bcd(timeinfo.tm_hour) | (1 << 5) | (1 << 6);
+    if (format == DS3231_TIME_FORMAT_12H)
+        data[3] = s_hour_to_reg(timeinfo.tm_hour, true);
     else
-        data[3] = s_convert_to_bcd(timeinfo.tm_hour) | (1 << 6);
+        data[3] = s_hour_to_reg(timeinfo.tm_hour, false);
 
     switch (interr) {
         case DS3231_ALARM1_INTERR_PER_SEC:
@@ -669,7 +646,7 @@ esp_err_t ds3231_alarm1_set_time(ds3231_handle_t ds3231_handle, ds3231_alarm1_ma
         return ret;
 }
 
-esp_err_t ds3231_alarm2_get_time(ds3231_handle_t ds3231_handle, ds3231_alarm2_match_t *interr, struct tm *timeinfo, bool *is_pm){
+esp_err_t ds3231_alarm2_get_time(ds3231_handle_t ds3231_handle, ds3231_alarm2_match_t *interr, struct tm *timeinfo, ds3231_time_format_t *format){
     esp_err_t ret = ESP_OK;
     ds3231_dev_t *rtc = (ds3231_dev_t *)ds3231_handle;
 
@@ -707,24 +684,14 @@ esp_err_t ds3231_alarm2_get_time(ds3231_handle_t ds3231_handle, ds3231_alarm2_ma
         default:
             return ESP_ERR_INVALID_RESPONSE;
     }
-    // check the format of time
-    if (data_buf_read[1] & (1 << 6)){
-        ESP_GOTO_ON_FALSE(is_pm != NULL, ESP_ERR_INVALID_ARG, err, TAG, "is_pm must be not NULL in 12-hour mode");
 
-        data_buf_read[1] &= ~(1 << 6);
-        
-        if (data_buf_read[1] & (1 << 5))
-            *is_pm = true;
-        else
-            *is_pm = false;
+    if (format != NULL)
+        *format = (data_buf_read[1] & (1 << 6)) ? DS3231_TIME_FORMAT_12H : DS3231_TIME_FORMAT_24H;
 
-        data_buf_read[1] &= ~(1 << 5);
-    }
-
-    s_convert_from_bcd(data_buf_read, sizeof(data_buf_read) - 1);
+    s_convert_from_bcd(data_buf_read, 1);
 
     timeinfo->tm_min = data_buf_read[0];
-    timeinfo->tm_hour = data_buf_read[1];
+    timeinfo->tm_hour = s_reg_to_hour(data_buf_read[1]);
 
     if (data_buf_read[2] & DS3231_ALARM2_DY_DT_BITMASK){
         data_buf_read[2] &= ~DS3231_ALARM2_DY_DT_BITMASK;
@@ -741,26 +708,25 @@ esp_err_t ds3231_alarm2_get_time(ds3231_handle_t ds3231_handle, ds3231_alarm2_ma
         return ret;
 }
 
-esp_err_t ds3231_alarm2_set_time(ds3231_handle_t ds3231_handle, ds3231_alarm2_match_t interr, struct tm timeinfo, bool *is_pm){
+esp_err_t ds3231_alarm2_set_time(ds3231_handle_t ds3231_handle, ds3231_alarm2_match_t interr, struct tm timeinfo, ds3231_time_format_t format){
     esp_err_t ret = ESP_OK;
     ds3231_dev_t *rtc = (ds3231_dev_t *)ds3231_handle;
 
     ESP_GOTO_ON_ERROR(s_precond_checks(rtc), err, TAG, "Invalid or uninitialized device");
-    ESP_GOTO_ON_FALSE((is_pm == NULL && timeinfo.tm_hour >= 0 && timeinfo.tm_hour <= 23)
-                      || (is_pm != NULL && timeinfo.tm_hour >= 1 && timeinfo.tm_hour <= 12),
-                      ESP_ERR_INVALID_ARG, err, TAG, "tm_hour is out of range for the selected time format");
+    ESP_GOTO_ON_FALSE(format == DS3231_TIME_FORMAT_12H || format == DS3231_TIME_FORMAT_24H, ESP_ERR_INVALID_ARG, err,
+                      TAG, "Invalid time format");
+    ESP_GOTO_ON_FALSE(timeinfo.tm_hour >= 0 && timeinfo.tm_hour <= 23, ESP_ERR_INVALID_ARG, err,
+                      TAG, "tm_hour is out of range (0-23)");
 
     uint8_t data[4] = {0};
 
     data[0] = DS3231_ADDR_ALARM2_MIN;
     data[1] = s_convert_to_bcd(timeinfo.tm_min);
 
-    if (is_pm == NULL)
-        data[2] = s_convert_to_bcd(timeinfo.tm_hour);
-    else if (*is_pm == true)
-        data[2] = s_convert_to_bcd(timeinfo.tm_hour) | (1 << 5) | (1 << 6);
+    if (format == DS3231_TIME_FORMAT_12H)
+        data[2] = s_hour_to_reg(timeinfo.tm_hour, true);
     else
-        data[2] = s_convert_to_bcd(timeinfo.tm_hour) | (1 << 6);
+        data[2] = s_hour_to_reg(timeinfo.tm_hour, false);
 
     switch (interr) {
         case DS3231_ALARM2_INTERR_PER_MIN:

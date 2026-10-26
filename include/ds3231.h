@@ -133,11 +133,11 @@ esp_err_t ds3231_get_time_format(ds3231_handle_t ds3231_handle, ds3231_time_form
  *                     tm_mday, tm_mon, tm_year and tm_wday. tm_hour must be 0-23 in 
  *                     24-hour format and 1-12 in 12-hour format
  * 
- * @param[in] is_pm NULL for 24-hour format. For 12-hour format: true for PM, false for AM
+ * @param[in] format Format in which the time is stored in the device
  * 
  * @return ESP_OK on success
  */
-esp_err_t ds3231_set_time(ds3231_handle_t ds3231_handle, struct tm timeinfo, bool *is_pm);
+esp_err_t ds3231_set_time(ds3231_handle_t ds3231_handle, struct tm timeinfo, ds3231_time_format_t format);
 
 /**
  * @brief Get the current date and time. 
@@ -146,16 +146,14 @@ esp_err_t ds3231_set_time(ds3231_handle_t ds3231_handle, struct tm timeinfo, boo
  * 
  * @note This function doesn't check whether the time is valid. Use ds3231_get_time_valid() for it
  * 
- * @warning The tm_hour field of the tm structure is in the range 1-12 in 12-hour format
- * 
  * @param[in] ds3231_handle Device handle
  * @param[out] timeinfo Date and time read from the device. Uses tm_sec, tm_min, tm_hour,
  *                      tm_mday, tm_mon, tm_year and tm_wday
- * @param[out] is_pm Must be not NULL in 12-hour format
+ * @param[out] format Format in which the time is stored in the device. May be NULL
  * 
  * @return ESP_OK on success
  */
-esp_err_t ds3231_get_time(ds3231_handle_t ds3231_handle, struct tm *timeinfo, bool *is_pm);
+esp_err_t ds3231_get_time(ds3231_handle_t ds3231_handle, struct tm *timeinfo, ds3231_time_format_t *format);
 
 /**
  * @brief Read temperature from the chip
@@ -307,25 +305,27 @@ esp_err_t ds3231_alarm1_interr_disable(ds3231_handle_t ds3231_handle);
  * @param[in] ds3231_handle Device handle
  * @param[out] interr Alarm match mode
  * @param[out] timeinfo the tm structure for time
- * @param[out] is_pm true if PM, false if AM. Not filled if 24-hour format used
+ * @param[out] format Format in which the alarm hour is stored in the device. May be NULL
  * 
  * @return ESP_OK on success
  */
-esp_err_t ds3231_alarm1_get_time(ds3231_handle_t ds3231_handle, ds3231_alarm1_match_t *interr, struct tm *timeinfo, bool *is_pm);
+esp_err_t ds3231_alarm1_get_time(ds3231_handle_t ds3231_handle, ds3231_alarm1_match_t *interr, struct tm *timeinfo, ds3231_time_format_t *format);
 
 /**
  * @brief Set the time of interrupt
  * 
  * @note In the structure tm you can fill the necessarry values only
  * 
+ * @warning The formt must match the current time format (see ds3231_get_time_format())
+ * 
  * @param[in] ds3231_handle Device handle
  * @param[in] interr Necessary interrupt matches
  * @param[in] timeinfo the tm structure for time
- * @param[in] is_pm true if PM, false if AM. NULL if 24-hour format used
+ * @param[in] format Format in which the alarm hour is stored in the device
  * 
  * @return ESP_OK on success
  */
-esp_err_t ds3231_alarm1_set_time(ds3231_handle_t ds3231_handle, ds3231_alarm1_match_t interr, struct tm timeinfo, bool *is_pm);
+esp_err_t ds3231_alarm1_set_time(ds3231_handle_t ds3231_handle, ds3231_alarm1_match_t interr, struct tm timeinfo, ds3231_time_format_t format);
 
 /**
  * @brief Read alarm 2 config (match mode and alarm time)
@@ -335,25 +335,27 @@ esp_err_t ds3231_alarm1_set_time(ds3231_handle_t ds3231_handle, ds3231_alarm1_ma
  * @param[in] ds3231_handle Device handle
  * @param[out] interr Alarm match mode
  * @param[out] timeinfo the tm structure for time
- * @param[out] is_pm true if PM, false if AM. Not filled if 24-hour format used
+ * @param[out] format Format in which the alarm hour is stored in the device. May be NULL
  * 
  * @return ESP_OK on success
  */
-esp_err_t ds3231_alarm2_get_time(ds3231_handle_t ds3231_handle, ds3231_alarm2_match_t *interr, struct tm *timeinfo, bool *is_pm);
+esp_err_t ds3231_alarm2_get_time(ds3231_handle_t ds3231_handle, ds3231_alarm2_match_t *interr, struct tm *timeinfo, ds3231_time_format_t *format);
 
 /**
  * @brief Set the time of interrupt
  * 
  * @note In the structure tm you can fill the necessarry values only
  * 
+ * @warning The formt must match the current time format (see ds3231_get_time_format())
+ * 
  * @param[in] ds3231_handle Device handle
  * @param[in] interr Necessary interrupt matches
  * @param[in] timeinfo the tm structure for time
- * @param[in] is_pm true if PM, false if AM. NULL if 24-hour format used
+ * @param[in] format Format in which the alarm hour is stored in the device
  * 
  * @return ESP_OK on success
  */
-esp_err_t ds3231_alarm2_set_time(ds3231_handle_t ds3231_handle, ds3231_alarm2_match_t interr, struct tm timeinfo, bool *is_pm);
+esp_err_t ds3231_alarm2_set_time(ds3231_handle_t ds3231_handle, ds3231_alarm2_match_t interr, struct tm timeinfo, ds3231_time_format_t format);
 
 /**
  * @brief Enable interrupts for alarm 2
