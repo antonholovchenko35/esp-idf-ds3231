@@ -6,11 +6,14 @@ A minimalistic ESP-IDF driver for the RTC module DS3231, built on the i2c_master
 
 - Read and set time with struct tm from the standard library time.h
 - 12-hour and 24-hour formats.
+- Two alarms with all match modes of the chip, alarm interupts
+- Square wave output with selectable frequency
+- 32 kHz output
 - Read temperature and get/set aging
 - Run and stop the oscillator when running on battery.
 - Square wave output support.
 - Uses an I2C bus handle provided by the application, so that it can be easily shared with other devices.
-- Time and data registers are read and written with a single I2C transaction, so there are no rollover errors between seconds, minutes, and hours.
+- Time and date registers are read and written with a single I2C transaction, so there are no rollover errors between seconds, minutes, and hours.
 
 ## Requirements
 - ESP-IDF v5.3 or newer
@@ -23,7 +26,10 @@ idf.py add-dependency "antonholovchenko35/ds3231"
 ## Notes
 - Support 2000-2099 years only
 - Fields `tm_yday` and `tm_isdst` of the `struct tm` are not filled
-- 12-hour mode is in the range 1-12 only
+- `tm_hour` is always 0-23, in both formats. In 12-hour mode the driver does the AM/PM conversion
+- The alarm hour format must match the current time format
+- Alarm interrupts and the square wave share INT/SQW pin, so you should call `ds3231_squarewave_disable()` before using alarm interrupts
+- Aftern an alarm fires, the INT pin stays low until the flag is cleared by the `ds3231_alarm_clear_flags()`
 - set time also sets the format of saved time and turn off the OSF bit
 - OSF flag is not reliable without battery
 - The I2C address 0x68 and bus speed 100 kHz are fixed
@@ -64,18 +70,20 @@ if (!time_valid || timeformat != DS3231_TIME_FORMAT_24H){
         .tm_sec = 0,
         .tm_wday = 4
     };
-    ESP_ERROR_CHECK(ds3231_set_time(rtc, timeinfo, NULL));
+
+    ESP_ERROR_CHECK(ds3231_set_time(rtc, timeinfo, DS3231_TIME_FORMAT_24H));
     ESP_LOGI(TAG, "Time was invalid, set to default");
 }
 
 struct tm timeinfo = {0};
+
 while (1){
     ESP_ERROR_CHECK(ds3231_get_time(rtc, &timeinfo, NULL));
 
     ESP_LOGI(TAG, "%04d-%02d-%02d %02d:%02d:%02d",
              timeinfo.tm_year + 1900, timeinfo.tm_mon + 1, timeinfo.tm_mday,
              timeinfo.tm_hour, timeinfo.tm_min, timeinfo.tm_sec);
-             
+
     vTaskDelay(pdMS_TO_TICKS(1000));
 }
 ```
