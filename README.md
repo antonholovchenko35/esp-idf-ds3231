@@ -94,5 +94,8 @@ See [examples](examples/) for complete projects.
 - [basic_24h](examples/basic_24h) - sets and reads time in 24-hour format
 - [basic_12h](examples/basic_12h) - sets and reads time in 12-hour format
 
+## AI assistance
+Because I forgot about it, the [CHANGELOG](CHANGELOG.md) entries up to v0.4.0 were written with the help of an AI assistant (Claude by Anthropic) from the git history, then reviewed by me. All code is written by me
+
 ## License
 MIT, see LICENSE
