@@ -142,7 +142,7 @@ esp_err_t ds3231_set_time(ds3231_handle_t ds3231_handle, struct tm timeinfo, ds3
 /**
  * @brief Get the current date and time. 
  * 
- * @note The tm_yday and tm_isdst fields of the tm structure are ignored
+ * @note The tm_isdst field is always sets to 0
  * 
  * @note This function doesn't check whether the time is valid. Use ds3231_get_time_valid() for it
  * 
