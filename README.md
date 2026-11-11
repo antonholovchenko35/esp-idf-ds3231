@@ -1,17 +1,16 @@
 # esp-idf-ds3231
 
-A minimalistic ESP-IDF driver for the RTC module DS3231, built on the i2c_master API. Future versions may add support for other DS3231 features. All features of this driver are tested on an ESP32-S3 board, including new ones that will be added in future releases.
+An ESP-IDF driver for the RTC module DS3231, built on the i2c_master API. Future versions may add support for other DS3231 features. All features of this driver are tested on an ESP32-S3 board, including new ones that will be added in future releases.
 
 ## Features
 
-- Read and set time with struct tm from the standard library time.h
+- Read and set time with struct tm from the standard library `time.h`.
 - 12-hour and 24-hour formats.
-- Two alarms with all match modes of the chip, alarm interupts
-- Square wave output with selectable frequency
-- 32 kHz output
-- Read temperature and get/set aging
+- Two alarms with all match modes of the chip, alarm interrupts.
+- Square wave output with selectable frequency.
+- 32 kHz output.
+- Read temperature and get/set aging.
 - Run and stop the oscillator when running on battery.
-- Square wave output support.
 - Uses an I2C bus handle provided by the application, so that it can be easily shared with other devices.
 - Time and date registers are read and written with a single I2C transaction, so there are no rollover errors between seconds, minutes, and hours.
 
@@ -24,15 +23,15 @@ idf.py add-dependency "antonholovchenko35/ds3231"
 ```
 
 ## Notes
-- Support 2000-2099 years only
-- Fields `tm_yday` and `tm_isdst` of the `struct tm` are not filled
-- `tm_hour` is always 0-23, in both formats. In 12-hour mode the driver does the AM/PM conversion
-- The alarm hour format must match the current time format
-- Alarm interrupts and the square wave share INT/SQW pin, so you should call `ds3231_squarewave_disable()` before using alarm interrupts
-- Aftern an alarm fires, the INT pin stays low until the flag is cleared by the `ds3231_alarm_clear_flags()`
-- set time also sets the format of saved time and turn off the OSF bit
-- OSF flag is not reliable without battery
-- The I2C address 0x68 and bus speed 100 kHz are fixed
+- Support 2000-2099 years only.
+- `tm_isdst` of the `struct tm` is always set to 0, because the driver treats the time stored in the RTC as UTC.
+- `tm_hour` is always 0-23, in both formats. In 12-hour mode the driver does the AM/PM conversion.
+- The alarm hour format must match the current time format.
+- Alarm interrupts and the square wave share INT/SQW pin, so you should call `ds3231_squarewave_disable()` before using alarm interrupts.
+- After an alarm fires, the INT pin stays low until the flag is cleared by the `ds3231_alarm_clear_flags()`.
+- `ds3231_set_time()` also sets the format of saved time and turns off the OSF bit. Because the driver treats the time stored in the RTC as UTC, pass UTC to this function as well.
+- OSF flag is not reliable without battery.
+- The I2C address 0x68 and bus speed 100 kHz are fixed.
 
 ## Usage
 ```c
@@ -91,11 +90,11 @@ while (1){
 See [examples](examples/) for complete projects.
 
 ## Examples
-- [basic_24h](examples/basic_24h) - sets and reads time in 24-hour format
-- [basic_12h](examples/basic_12h) - sets and reads time in 12-hour format
+- [basic_24h](examples/basic_24h) - sets and reads time in 24-hour format.
+- [basic_12h](examples/basic_12h) - sets and reads time in 12-hour format.
 
 ## AI assistance
-Because I forgot about it, the [CHANGELOG](CHANGELOG.md) entries up to v0.4.0 were written with the help of an AI assistant (Claude by Anthropic) from the git history, then reviewed by me. All code is written by me
+Because I forgot about it, the [CHANGELOG](CHANGELOG.md) entries up to v0.4.0 were written with the help of an AI assistant (Claude by Anthropic) from the git history, then reviewed by me. All code is written by me.
 
 ## License
-MIT, see LICENSE
+MIT, see [LICENSE](LICENSE)
