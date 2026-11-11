@@ -7,9 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-11-11
+
 ### Added
-- `ds3231_get_time()` fills `tm_yday` now (day of the year, 0..365)
-- `ds3231_get_time()` fills `tm_isdst` now. It's always sets to 0, because the driver treats the time stored in the RTC as UTC
+- `ds3231_get_time()` fills `tm_yday` now (day of the year, 0..365).
+- `ds3231_get_time()` fills `tm_isdst` now. It's always set to 0, because the driver treats
+  the time stored in the RTC as UTC.
 
 ## [0.4.0] - 2026-10-26
 
@@ -60,7 +63,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   oscillator control on battery.
 - Examples `basic_12h` and `basic_24h`.
 
-[Unreleased]: https://github.com/antonholovchenko35/esp-idf-ds3231/compare/v0.4.0...HEAD
+[Unreleased]: https://github.com/antonholovchenko35/esp-idf-ds3231/compare/v0.5.0...HEAD
+[0.5.0]: https://github.com/antonholovchenko35/esp-idf-ds3231/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/antonholovchenko35/esp-idf-ds3231/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/antonholovchenko35/esp-idf-ds3231/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/antonholovchenko35/esp-idf-ds3231/compare/v0.1.1...v0.2.0
