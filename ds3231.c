@@ -119,6 +119,23 @@ static uint8_t s_reg_to_hour(uint8_t reg){
     return (reg % 12) + (pm ? 12 : 0); // 12 am -> 0, 12 pm -> 12 etc.
 }
 
+static int s_leap_yr_coef(int year){
+    return ((!(year % 4) && year % 100) || !(year % 400)) ? 1 : 2;  // 1 if leap year, 2 if not
+}
+
+static int s_day_of_yr(int year, int month, int mday){
+    /*
+    * Day of the year (1..365, or 1..366 in leap years).
+    * Formula from the "Astronomical algorithms" by J. Meeus, ch. 7 "Julian day":
+    * 
+    *       N = INT(275*M/9) - K*INT((M+9)/12) + D - 30
+    * 
+    * Here: M - month (1..12), D - day of the month,  K = 1 for a leap year, 2 for a common year
+    */
+    int leap = s_leap_yr_coef(year);
+    return (275 * month) / 9 - leap * ((month + 9) / 12) + mday - 30;
+}
+
 esp_err_t ds3231_create(i2c_master_bus_handle_t i2c_bus, ds3231_handle_t *ds3231_handle){
     esp_err_t ret = ESP_OK;
 
@@ -323,6 +340,7 @@ esp_err_t ds3231_get_time(ds3231_handle_t ds3231_handle, struct tm *timeinfo, ds
     timeinfo->tm_mday = data_buf_read[4];
     timeinfo->tm_mon = data_buf_read[5] - 1;
     timeinfo->tm_year = data_buf_read[6] + 100;
+    timeinfo->tm_yday = s_day_of_yr(timeinfo->tm_year + 1900, timeinfo->tm_mon + 1, timeinfo->tm_mday) - 1;
 
     return ret;
 
