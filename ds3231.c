@@ -340,6 +340,7 @@ esp_err_t ds3231_get_time(ds3231_handle_t ds3231_handle, struct tm *timeinfo, ds
     timeinfo->tm_mday = data_buf_read[4];
     timeinfo->tm_mon = data_buf_read[5] - 1;
     timeinfo->tm_year = data_buf_read[6] + 100;
+    timeinfo->tm_isdst = 0;
     timeinfo->tm_yday = s_day_of_yr(timeinfo->tm_year + 1900, timeinfo->tm_mon + 1, timeinfo->tm_mday) - 1;
 
     return ret;
