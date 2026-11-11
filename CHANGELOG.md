@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- `ds3231_get_time()` fills `tm_yday` now (day of the year, 0..365)
+- `ds3231_get_time()` fills `tm_isdst` now. It's always sets to 0, because the driver treats the time stored in the RTC as UTC
+
 ## [0.4.0] - 2026-10-26
 
 ### Added
