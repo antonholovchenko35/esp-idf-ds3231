@@ -8,6 +8,7 @@
 #define DS3231_I2C_ADDR_DEFAULT     0x68
 #define DS3231_I2C_CLK_SPEED        100000UL
 #define DS3231_TIMEOUT_MS           50
+#define DS3231_LOCK_TIMEOUT_MS      1000
 
 #ifdef __cplusplus
 extern "C"{

@@ -6,6 +6,9 @@
 #include "driver/i2c_master.h"
 #include "esp_check.h"
 
+#include "freertos/FreeRTOS.h"
+#include "freertos/semphr.h"
+
 #define DS3231_ADDR_SEC                 0x00
 #define DS3231_ADDR_MIN                 0x01
 #define DS3231_ADDR_HOUR                0x02
@@ -42,6 +45,8 @@ static const char *TAG = "DS3231";
 
 typedef struct {
     i2c_master_dev_handle_t i2c_handle;
+    SemaphoreHandle_t mutex;
+    StaticSemaphore_t mutex_buf;
 } ds3231_dev_t;
 
 static uint8_t s_convert_to_bcd(uint8_t val){
@@ -76,18 +81,24 @@ static esp_err_t s_precond_checks(ds3231_dev_t *rtc){
  * @param[in] val the new value to be written to the bits
  */
 static esp_err_t s_modify_reg(ds3231_dev_t *rtc, uint8_t reg_addr, uint8_t mask, uint8_t val){
+    esp_err_t ret = ESP_OK;
+
     uint8_t reg_buf[2];
     reg_buf[0] = reg_addr;
 
-    ESP_RETURN_ON_ERROR(i2c_master_transmit_receive(rtc->i2c_handle, &(reg_buf[0]), 1, &(reg_buf[1]), 1, DS3231_TIMEOUT_MS),
+    ESP_RETURN_ON_FALSE(xSemaphoreTake(rtc->mutex, pdMS_TO_TICKS(DS3231_LOCK_TIMEOUT_MS)) == pdTRUE, ESP_ERR_TIMEOUT, TAG, "Failed to take mutex");
+    
+    ESP_GOTO_ON_ERROR(i2c_master_transmit_receive(rtc->i2c_handle, &(reg_buf[0]), 1, &(reg_buf[1]), 1, DS3231_TIMEOUT_MS), err,
                         TAG, "Failed to read register 0x%02X", reg_addr);
 
     reg_buf[1] = (reg_buf[1] & ~mask) | val;
 
-    ESP_RETURN_ON_ERROR(i2c_master_transmit(rtc->i2c_handle, reg_buf, 2, DS3231_TIMEOUT_MS),
+    ESP_GOTO_ON_ERROR(i2c_master_transmit(rtc->i2c_handle, reg_buf, 2, DS3231_TIMEOUT_MS), err,
                         TAG, "Failed to write register 0x%02X", reg_addr);
 
-    return ESP_OK;
+    err:
+        xSemaphoreGive(rtc->mutex);
+        return ret;
 }
 
 static uint8_t s_hour_to_reg(uint8_t hour, bool mode_12h){
@@ -145,6 +156,8 @@ esp_err_t ds3231_create(i2c_master_bus_handle_t i2c_bus, ds3231_handle_t *ds3231
     ds3231_dev_t *rtc = (ds3231_dev_t *) calloc(1, sizeof(ds3231_dev_t));
     ESP_RETURN_ON_FALSE(rtc != NULL, ESP_ERR_NO_MEM, TAG, "Failed to allocate device descriptor");
 
+    rtc->mutex = xSemaphoreCreateMutexStatic(&rtc->mutex_buf);
+
     const i2c_device_config_t i2c_dev_cfg = {
         .device_address = DS3231_I2C_ADDR_DEFAULT,
         .scl_speed_hz = DS3231_I2C_CLK_SPEED
@@ -172,6 +185,9 @@ void ds3231_delete(ds3231_handle_t ds3231_handle){
 
     if (rtc->i2c_handle)
         i2c_master_bus_rm_device(rtc->i2c_handle);
+
+    if (rtc->mutex)
+        vSemaphoreDelete(rtc->mutex);
 
     free(rtc);
 }
