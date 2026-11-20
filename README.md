@@ -12,6 +12,7 @@ An ESP-IDF driver for the RTC module DS3231, built on the i2c_master API. Future
 - Read temperature and get/set aging.
 - Run and stop the oscillator when running on battery.
 - Uses an I2C bus handle provided by the application, so that it can be easily shared with other devices.
+- Thread safe: the driver can be used from multiple FreeRTOS tasks.
 - Time and date registers are read and written with a single I2C transaction, so there are no rollover errors between seconds, minutes, and hours.
 
 ## Requirements
@@ -22,6 +23,9 @@ An ESP-IDF driver for the RTC module DS3231, built on the i2c_master API. Future
 idf.py add-dependency "antonholovchenko35/ds3231"
 ```
 
+## Thread safety
+The driver can be called from multiple FreeRTOS tasks without extra locking in the application because each I2C access is either single transaction, which is protected by `i2c_master` driver, or a read-modify-write operation, which is protected by the driver's internal mutex. If the mutex cannot be taken within `DS3231_LOCK_TIMEOUT_MS` (1000 ms), the function returns `ESP_ERR_TIMEOUT`.
+
 ## Notes
 - Support 2000-2099 years only.
 - `tm_isdst` of the `struct tm` is always set to 0, because the driver treats the time stored in the RTC as UTC.
@@ -31,6 +35,8 @@ idf.py add-dependency "antonholovchenko35/ds3231"
 - After an alarm fires, the INT pin stays low until the flag is cleared by the `ds3231_alarm_clear_flags()`.
 - `ds3231_set_time()` also sets the format of saved time and turns off the OSF bit. Because the driver treats the time stored in the RTC as UTC, pass UTC to this function as well.
 - OSF flag is not reliable without battery.
+- `ds3231_create()` and `ds3231_delete()` are not thread safe. Don't call `ds3231_delete()` while other tasks may still use the handle.
+- A sequence of calls, such as `ds3231_get_time_valid()` followed by `ds3231_set_time()`, is not atomic, so if several tasks can run the same sequence, protect it in the application.
 - The I2C address 0x68 and bus speed 100 kHz are fixed.
 
 ## Usage
@@ -92,6 +98,13 @@ See [examples](examples/) for complete projects.
 ## Examples
 - [basic_24h](examples/basic_24h) - sets and reads time in 24-hour format.
 - [basic_12h](examples/basic_12h) - sets and reads time in 12-hour format.
+
+## Bug reports and feedback
+If you find a bug, an inaccuracy in the documentation, or behavior that doesn't match the DS3231 dataheet, please [open an issue](https://github.com/antonholovchenko35/esp-idf-ds3231/issues). When reporting bugs, please include:
+- version of the driver and the ESP-IDF version
+- the target chip
+- minimal code that reproduce the problem
+- the log output, if there's any
 
 ## AI assistance
 Because I forgot about it, the [CHANGELOG](CHANGELOG.md) entries up to v0.4.0 were written with the help of an AI assistant (Claude by Anthropic) from the git history, then reviewed by me. All code is written by me.
