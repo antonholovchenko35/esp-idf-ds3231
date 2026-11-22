@@ -1,0 +1,52 @@
+name: Docs
+
+on:
+  workflow_dispatch:
+
+permissions: 
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Install Doxygen
+        run: sudo apt-get update && sudo apt-get install -y doxygen
+
+      - name: Set Project Version
+        run: sed -i "s|^PROJECT_NUMBER\s*=.*|PROJECT_NUMBER = $(git describe --tags --abbrev=0)|" Doxyfile
+
+      - name: Build Docs
+        run: doxygen Doxyfile
+
+      - name: Configure Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload Pages Artifact
+        uses: actions/upload-pages-artifact@v5
+        with:
+          path: docs/html
+  
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment: 
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+      
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v5
+    
