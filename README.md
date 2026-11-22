@@ -93,11 +93,11 @@ while (1){
 }
 ```
 
-See [examples](examples/) for complete projects.
+See [examples](https://github.com/antonholovchenko35/esp-idf-ds3231/tree/main/examples) for complete projects.
 
 ## Examples
-- [basic_24h](examples/basic_24h) - sets and reads time in 24-hour format.
-- [basic_12h](examples/basic_12h) - sets and reads time in 12-hour format.
+- [basic_24h](https://github.com/antonholovchenko35/esp-idf-ds3231/tree/main/examples/basic_12h) - sets and reads time in 24-hour format.
+- [basic_12h](https://github.com/antonholovchenko35/esp-idf-ds3231/tree/main/examples/basic_24h) - sets and reads time in 12-hour format.
 
 ## Bug reports and feedback
 If you find a bug, an inaccuracy in the documentation, or behavior that doesn't match the DS3231 dataheet, please [open an issue](https://github.com/antonholovchenko35/esp-idf-ds3231/issues). When reporting bugs, please include:
@@ -110,4 +110,4 @@ If you find a bug, an inaccuracy in the documentation, or behavior that doesn't 
 Because I forgot about it, the [CHANGELOG](CHANGELOG.md) entries up to v0.4.0 were written with the help of an AI assistant (Claude by Anthropic) from the git history, then reviewed by me. All code is written by me.
 
 ## License
-MIT, see [LICENSE](LICENSE)
+MIT, see [LICENSE](https://github.com/antonholovchenko35/esp-idf-ds3231/blob/main/LICENSE)
