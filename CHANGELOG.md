@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.6.1] - 2026-11-22
+
 ### Added
 - API reference generated with Doxygen: https://antonholovchenko35.github.io/esp-idf-ds3231/
 - Doxygen comments for all enums in `ds3231.h`
