@@ -1,3 +1,8 @@
+/**
+ * @file ds3231.h
+ * @brief Public API for the DS3231 RTC driver
+ */
+
 #pragma once
 
 #include <time.h>
@@ -22,44 +27,62 @@ typedef enum {
     DS3231_TIME_FORMAT_24H /**< 24-hour format */
 } ds3231_time_format_t;
 
+/**
+ * @brief Square wave output on the INT/SQW pin
+ */
 typedef enum {
-    DS3231_FREQ_1HZ    = 0x00,
-    DS3231_FREQ_1024HZ = 0x08,
-    DS3231_FREQ_4096HZ = 0x10,
-    DS3231_FREQ_8192HZ = 0x18
+    DS3231_FREQ_1HZ    = 0x00, /**<1 Hz */
+    DS3231_FREQ_1024HZ = 0x08, /**<1.024 kHz */
+    DS3231_FREQ_4096HZ = 0x10, /**<4.096 kHz */
+    DS3231_FREQ_8192HZ = 0x18  /**<8.192 kHz */
 } ds3231_squarewave_freq_t;
 
+/**
+ * @brief Alarms whose interrupts are enabled
+ */
 typedef enum {
-    DS3231_ALARM_NONE   = 0x00,
-    DS3231_ALARM_A1     = 0x01,
-    DS3231_ALARM_A2     = 0x02,
-    DS3231_ALARM_A1_A2  = 0x03
+    DS3231_ALARM_NONE   = 0x00, /**< No alarm interrupts enabled */
+    DS3231_ALARM_A1     = 0x01, /**< Alarm 1 interrupt enabled */
+    DS3231_ALARM_A2     = 0x02, /**< Alarm 2 interrupt enabled */
+    DS3231_ALARM_A1_A2  = 0x03  /**< Both alarm interrupts enabled */
 } ds3231_alarms_t;
 
+/**
+ * @brief Alarm flags which sets by the device when the time matches the alarm
+ */
 typedef enum {
-    DS3231_ALARM_NO_INTERR              = 0x00,
-    DS3231_ALARM1_FLAG_INTERR           = 0x01,
-    DS3231_ALARM2_FLAG_INTERR           = 0x02,
-    DS3231_ALARM1_ALARM2_FLAGS_INTERR   = 0x03
+    DS3231_ALARM_NO_INTERR              = 0x00, /**< No alarm has fired */
+    DS3231_ALARM1_FLAG_INTERR           = 0x01, /**< Alarm 1 has fired */
+    DS3231_ALARM2_FLAG_INTERR           = 0x02, /**< Alarm 2 has fired */
+    DS3231_ALARM1_ALARM2_FLAGS_INTERR   = 0x03  /**< Both alarms have fired */
 } ds3231_alarm_flags_t;
 
+/**
+ * @brief Match mode of alarm 1
+ */
 typedef enum {
-    DS3231_ALARM1_INTERR_PER_SEC          = 0x0F,   
-    DS3231_ALARM1_INTERR_MATCH_SEC        = 0x0E,   
-    DS3231_ALARM1_INTERR_MATCH_MINSEC     = 0x0C,       
-    DS3231_ALARM1_INTERR_MATCH_HOURMINSEC = 0x08,           
-    DS3231_ALARM1_INTERR_HOURMINSECDAY    = 0x10,
-    DS3231_ALARM1_INTERR_HOURMINSECDATE   = 0x00
+    DS3231_ALARM1_INTERR_PER_SEC          = 0x0F, /**< Alarm once per second */
+    DS3231_ALARM1_INTERR_MATCH_SEC        = 0x0E, /**< Alarm when seconds match */
+    DS3231_ALARM1_INTERR_MATCH_MINSEC     = 0x0C, /**< Alarm when minutes and seconds match */
+    DS3231_ALARM1_INTERR_MATCH_HOURMINSEC = 0x08, /**< Alarm when hours, minutes, and seconds match */
+    DS3231_ALARM1_INTERR_HOURMINSECDAY    = 0x10, /**< Alarm when day of the week, hours, minutes, and seconds match */
+    DS3231_ALARM1_INTERR_HOURMINSECDATE   = 0x00  /**< Alarm when date, hours, minutes, and seconds match */
 } ds3231_alarm1_match_t;
 
+/**
+ * @brief Match mode of alarm 2
+ */
 typedef enum {
-    DS3231_ALARM2_INTERR_PER_MIN           = 0x07,   
-    DS3231_ALARM2_INTERR_MATCH_MIN         = 0x06,   
-    DS3231_ALARM2_INTERR_MATCH_HOURMIN     = 0x04,       
-    DS3231_ALARM2_INTERR_MATCH_HOURMINDATE = 0x00,           
-    DS3231_ALARM2_INTERR_HOURMINDAY        = 0x10
+    DS3231_ALARM2_INTERR_PER_MIN           = 0x07, /**< Alarm once per minute */
+    DS3231_ALARM2_INTERR_MATCH_MIN         = 0x06, /**< Alarm when minutes match */
+    DS3231_ALARM2_INTERR_MATCH_HOURMIN     = 0x04, /**< Alarm when hours and minutes match */
+    DS3231_ALARM2_INTERR_MATCH_HOURMINDATE = 0x00, /**< Alarm when date, hours, and minutes match */
+    DS3231_ALARM2_INTERR_HOURMINDAY        = 0x10  /**< Alarm when day of the week, hours, and minutes match */
 } ds3231_alarm2_match_t;
 
+/**
+ * @brief Handle of a DS3231 device
+ */
 typedef void *ds3231_handle_t;
 
 /**
