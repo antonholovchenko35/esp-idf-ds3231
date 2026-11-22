@@ -23,6 +23,9 @@ An ESP-IDF driver for the RTC module DS3231, built on the i2c_master API. Future
 idf.py add-dependency "antonholovchenko35/ds3231"
 ```
 
+## Documentation
+The API reference is available at https://antonholovchenko35.github.io/esp-idf-ds3231/
+
 ## Thread safety
 The driver can be called from multiple FreeRTOS tasks without extra locking in the application because each I2C access is either single transaction, which is protected by `i2c_master` driver, or a read-modify-write operation, which is protected by the driver's internal mutex. If the mutex cannot be taken within `DS3231_LOCK_TIMEOUT_MS` (1000 ms), the function returns `ESP_ERR_TIMEOUT`.
 
