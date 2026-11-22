@@ -75,7 +75,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   oscillator control on battery.
 - Examples `basic_12h` and `basic_24h`.
 
-[Unreleased]: https://github.com/antonholovchenko35/esp-idf-ds3231/compare/v0.6.0...HEAD
+[Unreleased]: https://github.com/antonholovchenko35/esp-idf-ds3231/compare/v0.6.1...HEAD
+[0.6.1]: https://github.com/antonholovchenko35/esp-idf-ds3231/compare/v0.6.0...v0.6.1
 [0.6.0]: https://github.com/antonholovchenko35/esp-idf-ds3231/compare/v0.5.0...v0.6.0
 [0.5.0]: https://github.com/antonholovchenko35/esp-idf-ds3231/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/antonholovchenko35/esp-idf-ds3231/compare/v0.3.0...v0.4.0
