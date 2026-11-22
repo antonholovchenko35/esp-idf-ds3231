@@ -3,7 +3,7 @@ description: "An ESP-IDF driver for the DS3231 RTC"
 license: "MIT"
 url: "https://github.com/antonholovchenko35/esp-idf-ds3231"
 repository: "https://github.com/antonholovchenko35/esp-idf-ds3231.git"
-documentation: "https://github.com/antonholovchenko35/esp-idf-ds3231#readme"
+documentation: "https://antonholovchenko35.github.io/esp-idf-ds3231/"
 issues: "https://github.com/antonholovchenko35/esp-idf-ds3231/issues"
 
 tags:
