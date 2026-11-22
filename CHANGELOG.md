@@ -7,11 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [0.6.0]
+### Added
+- API reference generated with Doxygen: https://antonholovchenko35.github.io/esp-idf-ds3231/
+- Doxygen comments for all enums in `ds3231.h`
 
-## Added
--Thread safety: the driver can be called from multiple FreeRTOS tasks without extra locking in the application.
--`DS3231_LOCK_TIMEOUT_MS`. Functions that perform a read-modify-write operations return `ESP_ERR_TIMEOUT` if the internal mutex cannot be taken in this time.
+## [0.6.0] - 2026-11-20
+
+### Added
+- Thread safety: the driver can be called from multiple FreeRTOS tasks without extra locking in the application.
+- `DS3231_LOCK_TIMEOUT_MS`. Functions that perform a read-modify-write operations return `ESP_ERR_TIMEOUT` if the internal mutex cannot be taken in this time.
 
 ## [0.5.0] - 2026-11-11
 
